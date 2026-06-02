@@ -1,0 +1,39 @@
+services:
+  app:
+    build: .
+    container_name: estoque_app
+    ports:
+      - "8001:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: estoque
+      DB_USER: estoque
+      DB_PASS: estoque_pass
+    depends_on:
+      - db
+    volumes:
+      - .:/var/www/html
+    networks:
+      - estoque_network
+
+  db:
+    image: mysql:5.7
+    container_name: estoque_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: estoque
+      MYSQL_USER: estoque
+      MYSQL_PASSWORD: estoque_pass
+    volumes:
+      - ./db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3308:3306"
+    networks:
+      - estoque_network
+
+networks:
+  estoque_network:
+    driver: bridge

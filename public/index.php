@@ -81,7 +81,7 @@ function tabClass(string $tab): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estoque PHP</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
     <header>
@@ -211,15 +211,22 @@ function tabClass(string $tab): string
                         </select>
                     </label>
                     <label>Uso<br>
-                        <select name="uso">
+                        <select name="uso" id="uso">
                             <option value="Consumo">Consumo</option>
                             <option value="Empréstimo">Empréstimo</option>
                         </select>
                     </label>
                     <label>Data<br><input type="date" name="data_item" value="<?= date('Y-m-d') ?>" required></label>
-                    <label>Item<br><input type="text" name="item_name" placeholder="Digite o nome do item" required></label>
+                    <label>Item<br>
+                        <select name="item_name" id="item_name" required>
+                            <option value="">Selecione o item</option>
+                            <?php foreach ($items as $item): ?>
+                                <option value="<?= e($item['item']) ?>"><?= e($item['item']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
                     <label>Quantidade<br><input type="number" name="quantidade" min="1" value="1" required></label>
-                    <div id="field-funcionario" class="form-field hidden">
+                    <div id="field-funcionario" class="form-field hidden" style="display:none;">
                         <label>Funcionário<br>
                             <select name="id_funcionario">
                                 <option value="">Selecione o funcionário</option>
@@ -229,7 +236,7 @@ function tabClass(string $tab): string
                             </select>
                         </label>
                     </div>
-                    <div id="field-localidade" class="form-field hidden">
+                    <div id="field-localidade" class="form-field hidden" style="display:none;">
                         <label>Localidade<br>
                             <select name="id_localidade">
                                 <option value="">Selecione o local</option>
@@ -239,7 +246,7 @@ function tabClass(string $tab): string
                             </select>
                         </label>
                     </div>
-                    <div id="field-observacao" class="form-field hidden">
+                    <div id="field-observacao" class="form-field hidden" style="display:none;">
                         <label>Observação<br><textarea name="observacao"></textarea></label>
                     </div>
                     <label class="full-row" style="margin-top:30px;">Assinatura:</label>
@@ -323,6 +330,6 @@ function tabClass(string $tab): string
         <p>Estoque PHP | Projeto Docker + MySQL.</p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    <script src="form.js?v=3"></script>
+    <script src="form.js?v=7"></script>
 </body>
 </html>

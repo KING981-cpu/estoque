@@ -1,20 +1,35 @@
 document.addEventListener('DOMContentLoaded', function () {
     const tipoField = document.querySelector('select[name="tipo"]');
-    const usoField = document.querySelector('select[name="uso"]');
+    const usoField = document.getElementById('uso');
     const funcionarioBlock = document.getElementById('field-funcionario');
     const localidadeBlock = document.getElementById('field-localidade');
     const observacaoBlock = document.getElementById('field-observacao');
 
+    function normalizeText(value) {
+        return String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+    }
+
     function updateFormFields() {
-        const isEmprestimo = usoField.value === 'Empréstimo';
+        const tipoValue = normalizeText(tipoField?.value);
+        const usoValue = normalizeText(usoField?.value);
+        const isEmprestimo = tipoValue === 'saida' && usoValue === 'emprestimo';
 
-        funcionarioBlock.style.display = isEmprestimo ? '' : 'none';
-        localidadeBlock.style.display = isEmprestimo ? '' : 'none';
-        observacaoBlock.style.display = isEmprestimo ? '' : 'none';
+        if (funcionarioBlock) {
+            funcionarioBlock.classList.toggle('hidden', !isEmprestimo);
+            funcionarioBlock.style.display = isEmprestimo ? 'block' : 'none';
+        }
+        if (localidadeBlock) {
+            localidadeBlock.classList.toggle('hidden', !isEmprestimo);
+            localidadeBlock.style.display = isEmprestimo ? 'block' : 'none';
+        }
+        if (observacaoBlock) {
+            observacaoBlock.classList.toggle('hidden', !isEmprestimo);
+            observacaoBlock.style.display = isEmprestimo ? 'block' : 'none';
+        }
 
-        const funcionarioInput = funcionarioBlock.querySelector('select');
-        const localidadeInput = localidadeBlock.querySelector('select');
-        const observacaoInput = observacaoBlock.querySelector('textarea');
+        const funcionarioInput = funcionarioBlock?.querySelector('select');
+        const localidadeInput = localidadeBlock?.querySelector('select');
+        const observacaoInput = observacaoBlock?.querySelector('textarea');
 
         if (funcionarioInput) {
             funcionarioInput.required = isEmprestimo;
@@ -27,11 +42,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    if (tipoField && usoField) {
-        tipoField.addEventListener('change', updateFormFields);
+    if (usoField) {
         usoField.addEventListener('change', updateFormFields);
-        updateFormFields();
+        usoField.addEventListener('input', updateFormFields);
     }
+
+    if (tipoField) {
+        tipoField.addEventListener('change', updateFormFields);
+        tipoField.addEventListener('input', updateFormFields);
+    }
+
+    updateFormFields();
+    setTimeout(updateFormFields, 100);
 
     const signatureCanvas = document.getElementById('signature-pad');
     const assinaturaInput = document.getElementById('assinatura_data');

@@ -6,12 +6,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const observacaoBlock = document.getElementById('field-observacao');
 
     function updateFormFields() {
-        const uso = usoField.value;
-        const isEmprestimo = uso === 'Empréstimo';
+        const isEmprestimo = usoField.value === 'Empréstimo';
 
-        funcionarioBlock.classList.toggle('hidden', !isEmprestimo);
-        localidadeBlock.classList.toggle('hidden', !isEmprestimo);
-        observacaoBlock.classList.toggle('hidden', !isEmprestimo);
+        funcionarioBlock.style.display = isEmprestimo ? '' : 'none';
+        localidadeBlock.style.display = isEmprestimo ? '' : 'none';
+        observacaoBlock.style.display = isEmprestimo ? '' : 'none';
 
         const funcionarioInput = funcionarioBlock.querySelector('select');
         const localidadeInput = localidadeBlock.querySelector('select');
@@ -83,3 +82,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 });
+
+function showSignature(src) {
+    const win = window.open('', '_blank');
+    if (!win) {
+        alert('Não foi possível abrir a visualização da assinatura.');
+        return;
+    }
+    win.document.write("<html><head><title>Assinatura</title></head><body style='margin:0; background:#111; display:flex; align-items:center; justify-content:center; height:100vh;'><img src='" + src + "' style='max-width:90vw; max-height:90vh; box-shadow:0 0 20px rgba(0,0,0,0.5); border-radius:8px; background:#fff; padding:12px;'/><button onclick='window.close()' style='position:absolute; top:20px; right:20px; padding:10px 16px; background:#22c55e; color:#fff; border:none; border-radius:8px; cursor:pointer;'>Fechar</button></body></html>");
+    win.document.close();
+}

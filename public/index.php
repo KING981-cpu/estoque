@@ -81,7 +81,7 @@ function tabClass(string $tab): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estoque PHP</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
     <header>
@@ -217,14 +217,7 @@ function tabClass(string $tab): string
                         </select>
                     </label>
                     <label>Data<br><input type="date" name="data_item" value="<?= date('Y-m-d') ?>" required></label>
-                    <label>Item<br>
-                        <select name="id_item" required>
-                            <option value="">Selecione o item</option>
-                            <?php foreach ($items as $item): ?>
-                                <option value="<?= e($item['id_item']) ?>"><?= e($item['item']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
+                    <label>Item<br><input type="text" name="item_name" placeholder="Digite o nome do item" required></label>
                     <label>Quantidade<br><input type="number" name="quantidade" min="1" value="1" required></label>
                     <div id="field-funcionario" class="form-field hidden">
                         <label>Funcionário<br>
@@ -330,17 +323,6 @@ function tabClass(string $tab): string
         <p>Estoque PHP | Projeto Docker + MySQL.</p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    <script src="form.js"></script>
-    <script>
-        function showSignature(src) {
-            const win = window.open('', '_blank');
-            if (!win) {
-                alert('Não foi possível abrir a visualização da assinatura.');
-                return;
-            }
-            win.document.write("<html><head><title>Assinatura</title></head><body style='margin:0; background:#333; display:flex; align-items:center; justify-content:center; height:100vh;'><img src='" + src + "' style='max-width:90vw; max-height:90vh; box-shadow:0 0 20px rgba(0,0,0,0.5); border-radius:8px; background:#fff; padding:10px;'/><button onclick='window.close()' style='position:absolute; top:20px; right:20px; padding:10px 15px; background:#27ae60; color:#fff; border:none; border-radius:6px; cursor:pointer;'>Fechar</button></body></html>");
-            win.document.close();
-        }
-    </script>
+    <script src="form.js?v=3"></script>
 </body>
 </html>

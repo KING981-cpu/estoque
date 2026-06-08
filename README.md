@@ -55,7 +55,7 @@ create table movimentacao(
    ```
 3. Acesse o site:
    ```
-   http://localhost:8000
+   http://localhost:8001
    ```
 
 ## O que está disponível

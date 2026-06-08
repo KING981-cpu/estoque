@@ -294,7 +294,11 @@ footer {
     .movement-form label:nth-child(6),
     .movement-form label:nth-child(7),
     .movement-form label:nth-child(8),
-    .movement-form label:nth-child(9) {
+    .movement-form label:nth-child(9),
+    .movement-form .full-row,
+    .movement-form .signature-wrapper,
+    .movement-form #signature-clear,
+    .movement-form .btn-salvar {
         grid-column: span 2;
     }
 }

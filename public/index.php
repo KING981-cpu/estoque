@@ -242,11 +242,11 @@ function tabClass(string $tab): string
                     <div id="field-observacao" class="form-field hidden">
                         <label>Observação<br><textarea name="observacao"></textarea></label>
                     </div>
-                    <label style="margin-top:30px;">Assinatura:</label>
-                    <div class="signature-wrapper"><canvas id="signature-pad"></canvas></div>
-                    <button type="button" id="signature-clear" style="width:100%; cursor:pointer;">Limpar Assinatura</button>
+                    <label class="full-row" style="margin-top:30px;">Assinatura:</label>
+                    <div class="signature-wrapper full-row"><canvas id="signature-pad"></canvas></div>
+                    <button type="button" id="signature-clear" class="full-row" style="width:100%; cursor:pointer;">Limpar Assinatura</button>
                     <input type="hidden" name="assinatura_data" id="assinatura_data">
-                    <button type="submit" class="btn-salvar">Gravar Movimentação</button>
+                    <button type="submit" class="btn-salvar full-row">Gravar Movimentação</button>
                 </form>
             </section>
         <?php elseif ($activeTab === 'historico'): ?>

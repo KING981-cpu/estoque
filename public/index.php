@@ -85,7 +85,12 @@ function tabClass(string $tab): string
 </head>
 <body>
     <header>
-        <h1>Controle de Estoque</h1>
+        <div class="header-top">
+            <div>
+                <p class="eyebrow">Estoque</p>
+                <h1>Controle de Estoque</h1>
+            </div>
+        </div>
         <nav>
             <a class="<?= tabClass('items') ?>" href="?tab=items">Itens</a>
             <a class="<?= tabClass('funcionarios') ?>" href="?tab=funcionarios">Funcionários</a>

@@ -8,6 +8,10 @@ EnvLoader::load(__DIR__ . '/../.env');
 $app = new InventoryApp();
 $alert = null;
 $activeTab = $_GET['tab'] ?? 'items';
+$allowedTabs = ['items', 'movimentacoes', 'historico', 'relatorio'];
+if (!in_array($activeTab, $allowedTabs, true)) {
+    $activeTab = 'items';
+}
 $action = $_POST['action'] ?? null;
 
 try {
@@ -20,20 +24,6 @@ try {
             $alert = 'Item registrado com quantidade inicial de ' . $quantity . '.';
         }
         header('Location: ?tab=items');
-        exit;
-    }
-
-    if ($action === 'add_funcionario') {
-        $app->addFuncionario(trim($_POST['funcionario_nome'] ?? ''));
-        $alert = 'Funcionário cadastrado com sucesso.';
-        header('Location: ?tab=funcionarios');
-        exit;
-    }
-
-    if ($action === 'add_localidade') {
-        $app->addLocalidade(trim($_POST['localidade_nome'] ?? ''));
-        $alert = 'Localidade cadastrada com sucesso.';
-        header('Location: ?tab=localidades');
         exit;
     }
 
@@ -95,8 +85,6 @@ function tabClass(string $tab): string
         </div>
         <nav>
             <a class="<?= tabClass('items') ?>" href="?tab=items">Itens</a>
-            <a class="<?= tabClass('funcionarios') ?>" href="?tab=funcionarios">Funcionários</a>
-            <a class="<?= tabClass('localidades') ?>" href="?tab=localidades">Localidades</a>
             <a class="<?= tabClass('movimentacoes') ?>" href="?tab=movimentacoes">Movimentações</a>
             <a class="<?= tabClass('historico') ?>" href="?tab=historico">Histórico</a>
             <a class="<?= tabClass('relatorio') ?>" href="?tab=relatorio">Relatório</a>
@@ -135,70 +123,6 @@ function tabClass(string $tab): string
                                     <td><?= e($item['id_item']) ?></td>
                                     <td><?= e($item['item']) ?></td>
                                     <td><?= e($app->getStock((int)$item['id_item'])) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </section>
-        <?php elseif ($activeTab === 'funcionarios'): ?>
-            <section>
-                <h2>Funcionários</h2>
-                <form method="post" class="small-form">
-                    <input type="hidden" name="action" value="add_funcionario">
-                    <label>Nome<br><input name="funcionario_nome" required></label>
-                    <button type="submit">Cadastrar Funcionário</button>
-                </form>
-
-                <?php if (empty($funcionarios)): ?>
-                    <p>Nenhum funcionário cadastrado.</p>
-                <?php else: ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($funcionarios as $funcionario): ?>
-                                <tr>
-                                    <td><?= e($funcionario['id_funcionario']) ?></td>
-                                    <td><?= e($funcionario['nome']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </section>
-        <?php elseif ($activeTab === 'localidades'): ?>
-            <section>
-                <h2>Localidades</h2>
-                <form method="post" class="small-form">
-                    <input type="hidden" name="action" value="add_localidade">
-                    <label>Localidade (formato: Secretaria > Divisão > Setor)<br><input name="localidade_nome" placeholder="Secretaria > Divisão > Setor" required></label>
-                    <button type="submit">Cadastrar Localidade</button>
-                </form>
-
-                <?php if (empty($localidades)): ?>
-                    <p>Nenhuma localidade cadastrada.</p>
-                <?php else: ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Secretaria</th>
-                                <th>Divisão</th>
-                                <th>Setor</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($localidades as $localidade): ?>
-                                <tr>
-                                    <td><?= e($localidade['id_localidade']) ?></td>
-                                    <td><?= e($localidade['secretaria']) ?></td>
-                                    <td><?= e($localidade['divisao']) ?></td>
-                                    <td><?= e($localidade['setor']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

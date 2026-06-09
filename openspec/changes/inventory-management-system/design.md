@@ -1,151 +1,111 @@
-## Context
+## Contexto
 
-The organization needs a centralized, Docker-based inventory management system to replace manual stock tracking. Currently, inventory data is fragmented and lacks audit trails. The system must integrate with GLPI API for location/asset data and support multi-user operations with role-based access control. Key stakeholders include warehouse staff (for daily operations), managers (for reporting), and procurement (for purchasing recommendations).
+A organização precisa de um sistema centralizado de gestão de estoque baseado em Docker para substituir o controle manual de estoque. Atualmente, os dados de estoque estão fragmentados e carecem de trilhas de auditoria. O sistema deve suportar o controle de estoque local com um registro claro de movimentações e uma hierarquia de localização simples. Os principais interessados ​​incluem a equipe do armazém (para operações diárias), os gerentes (para relatórios) e o departamento de compras (para recomendações de compras).
 
-## Goals / Non-Goals
+## Objetivos / Não Objetivos
 
-**Goals:**
-- Provide centralized, real-time inventory tracking with complete audit trails
-- Enable automated email notifications when stock reaches minimum levels
-- Generate consumption reports and purchasing recommendations
-- Forecast stock exhaustion based on consumption patterns
-- Integrate with GLPI for location and asset data
-- Support Docker containerization for deployment
-- Implement security best practices including authentication, authorization, and signature requirements
+**Objetivos:**
+- Fornecer rastreamento de estoque centralizado e em tempo real com trilhas de auditoria completas
+- Habilitar notificações automáticas por e-mail quando o estoque atingir os níveis mínimos
+- Gerar relatórios de consumo e recomendações de compra
+- Prever o esgotamento do estoque com base nos padrões de consumo
+- Suportar a conteinerização com Docker para implantação
+- Implementar as melhores práticas de segurança, incluindo requisitos de autenticação, autorização e assinatura
 
-**Non-Goals:**
-- POS/sales integration (not required for this phase)
-- Multi-warehouse/multi-location support beyond GLPI location assignment
-- Barcode/RFID scanning (can be added later)
-- Mobile app (web interface primary)
-- Integration with other ERP systems beyond GLPI
+**Não Objetivos:**
+- Integração com PDV/vendas (não é necessária nesta fase)
+- Suporte a múltiplos armazéns/múltiplos locais além da hierarquia de localização local
+- Leitura de código de barras/RFID (pode ser adicionada posteriormente)
+- Aplicativo móvel (interface web como principal)
+- Integração com outros sistemas ERP
 
-## Decisions
+## Decisões
 
-### Decision 1: Technology Stack
-**Choice**: Python backend (FastAPI), PostgreSQL database, React frontend, Docker containerization
+### Decisão 1: Pilha de Tecnologia
+**Escolha**: Backend em Python (FastAPI), banco de dados PostgreSQL, frontend em React, conteinerização com Docker
 
-**Rationale**: 
-- FastAPI provides excellent async support for background tasks (notifications, forecasting)
-- PostgreSQL offers strong ACID compliance for critical inventory transactions
-- React allows responsive UI for warehouse staff
-- Docker enables consistent deployment across environments
+**Justificativa**:
+- O FastAPI oferece excelente suporte assíncrono para tarefas em segundo plano (notificações, previsões)
+- O PostgreSQL oferece forte conformidade com ACID para dados críticos Transações de estoque
+- React permite interfaces de usuário responsivas para a equipe do armazém
+- Docker possibilita a implantação consistente em diferentes ambientes
 
-**Alternatives Considered**:
-- Node.js/Express: Good choice but Python has better ML libraries for forecasting
-- MySQL: Adequate but PostgreSQL's JSON support valuable for audit trails
-- Vue.js: Equally valid, chose React for larger community and ecosystem
+**Alternativas consideradas**:
+- Node.js/Express: Boa escolha, mas o Python possui bibliotecas de aprendizado de máquina melhores para previsão
+- MySQL: Adequado, mas o suporte a JSON do PostgreSQL é valioso para trilhas de auditoria
+- Vue.js: Igualmente válido, optamos pelo React devido à maior comunidade e ecossistema
 
-### Decision 2: Audit Trail Architecture
-**Choice**: Immutable audit log table with JSON payload storage, separate from entity tables
+### Decisão 2: Arquitetura de Trilha de Auditoria
+**Escolha**: Tabela de log de auditoria imutável com armazenamento de payload JSON, separada das tabelas de entidades
 
-**Rationale**:
-- Provides complete history without modifying historical records
-- JSON payloads allow storing full context of each movement
-- Supports compliance and forensics requirements
-- Separates data modification concerns from audit concerns
+**Justificativa**:
+- Fornece histórico completo sem modificar registros históricos
+- Payloads JSON permitem armazenar o contexto completo de cada movimentação
+- Atende aos requisitos de conformidade e forense
+- Separa as preocupações com modificação de dados das preocupações com auditoria
 
-**Alternatives Considered**:
-- Event sourcing: Powerful but adds complexity not needed for this phase
-- Trigger-based audits: Brittle and harder to maintain
+**Alternativas consideradas**:
+- Event Sourcing: Poderoso, mas adiciona complexidade desnecessária para esta fase
+- Auditorias baseadas em gatilhos: Frágeis e mais difíceis de manter
 
-### Decision 3: Notification System
-**Choice**: Async task queue (Celery) with scheduled checks, email backend
+### Decisão 3: Sistema de Notificação
+**Escolha**: Fila de tarefas assíncronas (Celery) com verificações agendadas e backend de e-mail
 
-**Rationale**:
-- Decouples notifications from request-response cycle
-- Handles batching and rate limiting naturally
-- Easy to add SMS/Slack notifications later
-- Celery well-proven for background tasks in Python
+**Justificativa**:
+- Desacopla as notificações do ciclo de requisição-resposta
+- Lida com processamento em lote e limitação de taxa de forma natural
+- Facilita a adição de notificações por SMS/Slack posteriormente
+- Celery é uma solução comprovada para tarefas em segundo plano em Python
 
-**Alternatives Considered**:
-- Polling in background thread: Less reliable and harder to scale
-- WebSockets for real-time: Overkill for notification requirements
+**Alternativas consideradas**:
+- Sondagem em thread em segundo plano: Menos confiável e mais difícil de escalar
+- WebSockets para tempo real: Exagerado para os requisitos de notificação
 
-### Decision 4: Forecasting Approach
-**Choice**: Time-series analysis using exponential smoothing with seasonal adjustment
+### Decisão 4: Abordagem de previsão
+**Escolha**: Análise de séries temporais usando suavização exponencial com ajuste sazonal
 
-**Rationale**:
-- Simpler than full ML models but handles seasonal patterns
-- Sufficient for inventory forecasting use case
-- Can be computed incrementally without ML infrastructure
-- Easy to tune and explain to stakeholders
+**Justificativa**:
+- Mais simples do que modelos de aprendizado de máquina completos, mas lida com padrões sazonais
+- Suficiente para o caso de uso de previsão de estoque
+- Pode ser computado incrementalmente sem infraestrutura de aprendizado de máquina
+- Fácil de ajustar e explicar às partes interessadas
 
-**Alternatives Considered**:
-- ARIMA models: Overkill, harder to implement and explain
-- Simple linear regression: Ignores seasonal patterns
+**Alternativas consideradas**:
+- Modelos ARIMA: Exagerados, mais difíceis de implementar e explicar
+- Regressão linear simples: Ignora a sazonalidade Padrões
 
-### Decision 5: GLPI Integration
-**Choice**: Scheduled sync (24-hour interval) with local cache and conflict detection
+### Decisão 5: Hierarquia de Localização Local
+**Opção**: Utilizar um modelo de localização local com importação opcional de hierarquia baseada em planilha
 
-**Rationale**:
-- Reduces API load on GLPI
-- Inventory system remains functional if GLPI is unavailable
-- Conflicts detected automatically and escalated to admin
-- User doesn't need real-time GLPI connection
+**Justificativa**:
+- Mantém o sistema independente de APIs externas
+- Garante a disponibilidade mesmo sem acesso à rede
+- Simplifica a implantação e a manutenção
+- Permite o controle local de locais e hierarquias de departamentos
 
-**Alternatives Considered**:
-- Real-time API calls: Performance impact and dependency risk
-- Manual mapping: Burden on users
+**Alternativas Consideradas**:
+- Integração com API externa: adiciona dependência e risco de falha
+- Entrada manual de texto para localização: menos estruturada e mais difícil de gerar relatórios
 
-### Decision 6: Data Validation and Signature
-**Choice**: Role-based signature requirement (password/PIN for exits) with configurable strict mode
+### Decisão 6: Validação e Assinatura de Dados
+**Opção**: Exigência de assinatura baseada em função (senha/PIN para saídas) com modo estrito configurável
 
-**Rationale**:
-- Simple implementation for security requirement
-- Can be extended to biometric/hardware tokens later
-- Audit trail captures who approved each movement
-- Role-based allows different strictness per user level
+**Justificativa**:
+- Implementação simples para requisitos de segurança
+- Pode ser estendida para tokens biométricos/de hardware posteriormente
+- O registro de auditoria captura quem aprovou cada movimentação
+- A abordagem baseada em função permite diferentes níveis de rigor por usuário
 
-**Alternatives Considered**:
-- Always require signature: Too strict for routine operations
-- No signature requirement: Inadequate for compliance
+**Alternativas Consideradas**:
+- Exigir assinatura sempre: Muito rigoroso para operações rotineiras
+- Não exigir assinatura: Inadequado para conformidade
 
-## Risks / Trade-offs
+## Riscos/Compromissos
 
-**Risk 1: GLPI API Availability** → Mitigation: Cache locations locally, continue operation with cached data, alert if sync fails
+**Risco 1: Disponibilidade de Dados Locais** → Mitigação: Manter os dados de localização e estoque no banco de dados, permitir atualização manual da hierarquia local
 
-**Risk 2: Forecast Accuracy with Sporadic Consumption** → Mitigation: System flags low-confidence forecasts, recommends manual review for items with volatile consumption
+**Risco 2: Precisão da Previsão com Consumo Esporádico** → Mitigação: O sistema sinaliza previsões de baixa confiança e recomenda revisão manual para itens com consumo volátil
 
-**Risk 3: Audit Trail Storage Growth** → Mitigation: Implement archival strategy (move old records to archive table after 2 years), partition by date
+**Risco 3: Crescimento do Armazenamento de Trilhas de Auditoria** → Mitigação: Implementar estratégia de arquivamento (mover registros antigos para uma tabela de arquivo após 2 anos), particionar por data
 
-**Risk 4: Email Deliverability** → Mitigation: Track delivery status, retry failed sends, provide admin dashboard for notification status
-
-**Risk 5: Race Conditions in Stock Updates** → Mitigation: Use database transactions and row-level locking for all inventory updates
-
-**Risk 6: User Training for New System** → Mitigation: Comprehensive documentation, in-app guidance, phased rollout with pilot group
-
-## Migration Plan
-
-**Phase 1 - Setup (Week 1)**:
-- Deploy Docker containers for backend, database, and frontend
-- Configure GLPI API credentials and initial sync
-- Set up email service
-- Configure admin user and roles
-
-**Phase 2 - Data Migration (Week 2)**:
-- Perform physical inventory count
-- Import current inventory data into system
-- Reconcile any discrepancies
-- Export baseline data for audit
-
-**Phase 3 - Pilot (Weeks 3-4)**:
-- Train pilot group (5-10 warehouse staff)
-- Run parallel with existing system
-- Collect feedback and resolve issues
-
-**Phase 4 - Rollout (Week 5+)**:
-- Full staff training
-- Transition to new system as primary inventory tracker
-- Sunset legacy tracking method
-- Monitor for issues and provide support
-
-**Rollback Strategy**: Keep historical data exported and accessible; can revert to manual tracking if critical issues arise (system designed for this possibility)
-
-## Open Questions
-
-1. **Forecasting Tuning**: Should forecast weights be per-item or global? Recommendation: Start global, allow per-item customization based on pilot feedback
-2. **Email Recipients**: Should recipients be per-item or global? Recommendation: Both - global defaults + per-item overrides
-3. **Signature Method**: PIN, password, or both? Recommendation: Password initially, PIN optional in future versions
-4. **Loan Return Handling**: Should partial returns be supported? Recommendation: Yes - update loan quantity on partial return
-5. **Integration Timeline**: Can GLPI sync wait for Phase 2, or needed in Phase 1? Recommendation: Implement in Phase 1 but can initially auto-create locations if GLPI unavailable
+**Risco 4: Entregabilidade de E-mails** → Mitigação: Rastrear o status de entrega, tentar reenviar e-mails com falha

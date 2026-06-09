@@ -31,7 +31,7 @@ class MovementModel
 
     public function history(int $itemId = null): array
     {
-        $query = 'SELECT m.id_movimentacao, m.tipo, m.data_item, m.quantidade, m.assinatura, m.uso, m.`observação` AS observacao, f.nome AS funcionario, l.local AS localidade, i.item AS item_name FROM movimentacao m LEFT JOIN funcionario f ON m.id_funcionario = f.id_funcionario LEFT JOIN localidade l ON m.id_localidade = l.id_localidade LEFT JOIN item i ON m.id_item = i.id_item';
+        $query = 'SELECT m.id_movimentacao, m.tipo, m.data_item, m.quantidade, m.assinatura, m.uso, m.`observação` AS observacao, f.nome AS funcionario, CONCAT_WS(" > ", l.secretaria, l.divisao, l.setor) AS localidade, i.item AS item_name FROM movimentacao m LEFT JOIN funcionario f ON m.id_funcionario = f.id_funcionario LEFT JOIN localidade l ON m.id_localidade = l.id_localidade LEFT JOIN item i ON m.id_item = i.id_item';
 
         if ($itemId !== null) {
             $query .= ' WHERE m.id_item = ?';

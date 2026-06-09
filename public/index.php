@@ -176,7 +176,7 @@ function tabClass(string $tab): string
                 <h2>Localidades</h2>
                 <form method="post" class="small-form">
                     <input type="hidden" name="action" value="add_localidade">
-                    <label>Local<br><input name="localidade_nome" required></label>
+                    <label>Localidade (formato: Secretaria > Divisão > Setor)<br><input name="localidade_nome" placeholder="Secretaria > Divisão > Setor" required></label>
                     <button type="submit">Cadastrar Localidade</button>
                 </form>
 
@@ -187,14 +187,18 @@ function tabClass(string $tab): string
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Local</th>
+                                <th>Secretaria</th>
+                                <th>Divisão</th>
+                                <th>Setor</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($localidades as $localidade): ?>
                                 <tr>
                                     <td><?= e($localidade['id_localidade']) ?></td>
-                                    <td><?= e($localidade['local']) ?></td>
+                                    <td><?= e($localidade['secretaria']) ?></td>
+                                    <td><?= e($localidade['divisao']) ?></td>
+                                    <td><?= e($localidade['setor']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

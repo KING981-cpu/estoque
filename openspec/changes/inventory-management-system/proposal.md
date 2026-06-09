@@ -1,41 +1,42 @@
-## Why
+## Porquê
 
-The organization lacks a centralized inventory management system, leading to stock shortages, inventory discrepancies, and inability to track material consumption and movement. Currently, item data must be manually maintained without real-time visibility. This system will integrate with GLPI API for location data and provide complete inventory tracking, automated notifications for stock levels, and consumption analytics.
+A organização carece de um sistema centralizado de gestão de inventário, o que leva a faltas de estoque, discrepâncias no inventário e incapacidade de rastrear o consumo e a movimentação de materiais. Atualmente, os dados dos itens precisam ser mantidos manualmente, sem visibilidade em tempo real. Este sistema fornecerá rastreamento completo de inventário, notificações automatizadas para níveis de estoque e análises de consumo.
 
-## What Changes
+## O que muda
 
-- New Docker-based inventory management system with centralized stock tracking
-- Real-time item quantity management with minimum and desired level alerts
-- Complete audit trail for all item movements (entries, exits, loans)
-- Integration with GLPI API to pull location and asset data
-- Email notifications when stock reaches or falls below minimum levels
-- Monthly consumption reports and purchasing recommendations
-- Item lifecycle management with deactivation and disposition tracking
-- Loan management with employee and department tracking
-- Predictive analytics for stock level forecasting
+- Novo sistema de gestão de inventário baseado em Docker com rastreamento centralizado de estoque
+- Gestão de quantidade de itens em tempo real com alertas de níveis mínimos e desejados
+- Registro completo de todas as movimentações de itens (entradas, saídas, empréstimos)
+- Notificações por e-mail quando o estoque atinge ou cai abaixo dos níveis mínimos
+- Relatórios mensais de consumo e recomendações de compra
+- Gestão do ciclo de vida do item com rastreamento de desativação e descarte
+- Gestão de empréstimos com rastreamento de funcionários e departamentos
+- Análise preditiva para previsão de níveis de estoque
 
-## Capabilities
+## Funcionalidades
 
-### New Capabilities
+### Novas funcionalidades
 
-- `inventory-item-management`: Track inventory items with quantities, minimum thresholds, and desired quantities. Support item activation/deactivation with disposition tracking.
-- `stock-movement-tracking`: Record all item entries and exits with audit trails including user, timestamp, quantity, and purpose (consumption vs. loan).
-- `loan-management`: Track item loans to employees/departments with borrower information and return tracking.
-- `glpi-integration`: Integrate with GLPI API to fetch location and asset data for inventory organization.
-- `inventory-notifications`: Email notifications when items reach minimum stock levels with configurable recipient management.
-- `consumption-reporting`: Generate monthly consumption reports and analyze usage patterns by item and department.
-- `purchase-recommendations`: Calculate recommended purchase quantities based on consumption trends and desired stock levels.
-- `inventory-forecasting`: Estimate when items will reach minimum stock levels based on current consumption rates.
+- `inventory-item-management`: Rastreie itens de inventário com quantidades, limites mínimos e quantidades desejadas. Suporte para ativação/desativação de itens com rastreamento de descarte. - `rastreamento de movimentação de estoque`: Registra todas as entradas e saídas de itens com trilhas de auditoria, incluindo usuário, data e hora, quantidade e finalidade (consumo ou empréstimo).
 
-### Modified Capabilities
+- `gerenciamento de empréstimos`: Rastreia empréstimos de itens para funcionários/departamentos com informações do tomador e rastreamento de devoluções.
 
-<!-- No existing capabilities being modified for this initial system -->
+- `notificações de estoque`: Envia notificações por e-mail quando os itens atingem os níveis mínimos de estoque, com gerenciamento de destinatários configurável.
 
-## Impact
+- `relatórios de consumo`: Gera relatórios mensais de consumo e analisa padrões de uso por item e departamento.
 
-- New backend service with database layer for inventory tracking
-- Email integration for notifications
-- REST/GraphQL API for inventory operations
-- GLPI API integration layer
-- Docker containerization for deployment
-- Frontend dashboard for inventory visibility and management
+- `recomendações de compra`: Calcula as quantidades de compra recomendadas com base nas tendências de consumo e nos níveis de estoque desejados.
+
+- `previsão de estoque`: Estima quando os itens atingirão os níveis mínimos de estoque com base nas taxas de consumo atuais.
+
+### Funcionalidades Modificadas
+
+<!-- Nenhuma funcionalidade existente está sendo modificada para este sistema inicial -->
+
+## Impacto
+
+- Novo serviço de backend com camada de banco de dados para rastreamento de estoque
+- Integração de e-mail para notificações
+- API REST/GraphQL para operações de estoque
+- Containerização com Docker para implantação
+- Painel de controle para visualização e gerenciamento de estoque

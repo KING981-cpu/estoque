@@ -15,10 +15,17 @@ document.addEventListener('DOMContentLoaded', function () {
         return String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
     }
 
+    const NO_SETOR_VALUE = 'Sem setor disponível';
+
     function setHiddenLocalidadePath() {
         const secretaria = localidadeSecretaria?.value || '';
         const divisao = localidadeDivisao?.value || '';
-        const setor = localidadeSetor?.value || '';
+        let setor = localidadeSetor?.value || '';
+
+        if (secretaria && divisao && !setor) {
+            setor = NO_SETOR_VALUE;
+        }
+
         const parts = [secretaria, divisao, setor].filter(Boolean);
         if (localidadePathInput) {
             localidadePathInput.value = parts.join(' > ');
@@ -41,9 +48,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const setores = divisaoData?.setores || [];
 
         if (setores.length === 0) {
-            localidadeSetor.disabled = false;
-            localidadeSetor.innerHTML = '<option value="">Sem setor disponível</option>';
-            localidadePathInput.value = `${secretariaData.secretaria} > ${divisaoData.name}`;
+            localidadeSetor.disabled = true;
+            localidadeSetor.innerHTML = '<option value="' + NO_SETOR_VALUE.replace(/"/g, '&quot;') + '">' + NO_SETOR_VALUE + '</option>';
+            localidadeSetor.value = NO_SETOR_VALUE;
+            localidadePathInput.value = `${secretariaData.secretaria} > ${divisaoData.name} > ${NO_SETOR_VALUE}`;
             return;
         }
 

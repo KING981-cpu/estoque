@@ -29,14 +29,14 @@ body {
 }
 
 header {
-    padding: 32px 24px 42px;
+    padding: 20px 18px 24px;
     background: linear-gradient(135deg, #0f172a, #1e293b);
     color: #f8fafc;
 }
 
 header h1 {
     margin: 0;
-    font-size: clamp(2.1rem, 2.8vw, 3rem);
+    font-size: clamp(1.85rem, 2.4vw, 2.4rem);
     letter-spacing: -0.04em;
 }
 
@@ -44,23 +44,23 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
+    gap: 16px;
 }
 
 .eyebrow {
     text-transform: uppercase;
-    letter-spacing: 0.24em;
-    margin: 0 0 10px;
+    letter-spacing: 0.2em;
+    margin: 0 0 8px;
     color: #a5b4fc;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 700;
 }
 
 nav {
-    margin-top: 26px;
+    margin-top: 18px;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
 }
 
 nav a {
@@ -86,18 +86,18 @@ nav a.active {
 }
 
 main {
-    max-width: 1180px;
-    margin: 0 auto 32px;
-    padding: 0 24px 24px;
+    max-width: 1040px;
+    margin: 0 auto 18px;
+    padding: 0 18px 18px;
 }
 
 section {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 28px;
+    border-radius: 22px;
     box-shadow: var(--shadow);
-    padding: 30px 32px;
-    margin-bottom: 24px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
 }
 
 h2 {
@@ -110,7 +110,7 @@ h2 {
 form label {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     margin: 0;
     color: #334155;
     font-weight: 600;
@@ -121,10 +121,10 @@ form textarea,
 form select {
     width: 100%;
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 14px;
     background: #ffffff;
-    padding: 14px 16px;
-    font-size: 0.98rem;
+    padding: 12px 14px;
+    font-size: 0.95rem;
     color: var(--text);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -138,7 +138,7 @@ form select:focus {
 }
 
 textarea {
-    min-height: 120px;
+    min-height: 100px;
     resize: vertical;
 }
 
@@ -180,11 +180,11 @@ form button:hover,
 .small-form,
 .movement-form {
     display: grid;
-    gap: 18px;
+    gap: 14px;
     background: var(--surface-strong);
     border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 24px;
-    padding: 24px;
+    border-radius: 22px;
+    padding: 18px;
 }
 
 .movement-form {
@@ -221,7 +221,7 @@ thead {
 
 th,
 td {
-    padding: 16px 18px;
+    padding: 12px 14px;
     text-align: left;
     color: #334155;
 }
@@ -281,7 +281,7 @@ img.img-assinatura-thumbnail {
 
 footer {
     text-align: center;
-    padding: 16px 0 28px;
+    padding: 12px 0 18px;
     color: #64748b;
 }
 
@@ -290,11 +290,6 @@ footer {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .movement-form label:nth-child(5),
-    .movement-form label:nth-child(6),
-    .movement-form label:nth-child(7),
-    .movement-form label:nth-child(8),
-    .movement-form label:nth-child(9),
     .movement-form .full-row,
     .movement-form .signature-wrapper,
     .movement-form #signature-clear,

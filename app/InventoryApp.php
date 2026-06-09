@@ -5,7 +5,7 @@ require_once __DIR__ . '/ItemModel.php';
 require_once __DIR__ . '/MovementModel.php';
 require_once __DIR__ . '/FuncionarioModel.php';
 require_once __DIR__ . '/LocalidadeModel.php';
-require_once __DIR__ . '/GlpiService.php';
+require_once __DIR__ . '/SpreadsheetLocationLoader.php';
 require_once __DIR__ . '/EnvLoader.php';
 
 class InventoryApp
@@ -15,7 +15,7 @@ class InventoryApp
     private MovementModel $movements;
     private FuncionarioModel $funcionarios;
     private LocalidadeModel $localidades;
-    private ?GlpiService $glpiService = null;
+    private SpreadsheetLocationLoader $spreadsheetLocationLoader;
 
     public function __construct()
     {
@@ -25,8 +25,7 @@ class InventoryApp
         $this->movements = new MovementModel($this->database);
         $this->funcionarios = new FuncionarioModel($this->database);
         $this->localidades = new LocalidadeModel($this->database);
-
-        $this->glpiService = new GlpiService(new ApiClient(), $this->localidades);
+        $this->spreadsheetLocationLoader = new SpreadsheetLocationLoader(__DIR__ . '/../ORGANOGRAMA DAS SECRETARIAS CHEFES E DIRETORES - ATUALIZADO 2026-04-20.xlsx');
     }
 
     public function getItems(): array
@@ -41,11 +40,12 @@ class InventoryApp
 
     public function getLocalidades(): array
     {
-        try {
-            return $this->glpiService->syncLocations();
-        } catch (\Throwable $error) {
-            return $this->localidades->all();
-        }
+        return $this->localidades->all();
+    }
+
+    public function getLocalidadeHierarchy(): array
+    {
+        return $this->spreadsheetLocationLoader->loadHierarchy();
     }
 
     public function getMovements(int $itemId = null): array
@@ -101,6 +101,13 @@ class InventoryApp
             $itemId = $this->items->getOrCreateByName($itemName);
         }
 
+        $localidadeId = null;
+        if (!empty($data['id_localidade'])) {
+            $localidadeId = (int)$data['id_localidade'];
+        } elseif (!empty($data['localidade_path'])) {
+            $localidadeId = $this->localidades->ensureExists(trim($data['localidade_path']));
+        }
+
         return $this->movements->record(
             $itemId,
             $data['tipo'],
@@ -110,7 +117,7 @@ class InventoryApp
             $data['uso'],
             $data['observacao'] ?? '',
             !empty($data['id_funcionario']) ? (int)$data['id_funcionario'] : null,
-            !empty($data['id_localidade']) ? (int)$data['id_localidade'] : null
+            $localidadeId
         );
     }
 

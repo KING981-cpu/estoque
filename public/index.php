@@ -60,8 +60,10 @@ try {
 $items = $app->getItems();
 $funcionarios = $app->getFuncionarios();
 $localidades = $app->getLocalidades();
+$localidadeHierarchy = $app->getLocalidadeHierarchy();
 $movimentacoes = $app->getMovements();
 $movementSummary = $app->getMovementSummary();
+
 
 function e(string $text): string
 {
@@ -218,10 +220,10 @@ function tabClass(string $tab): string
                     </label>
                     <label>Data<br><input type="date" name="data_item" value="<?= date('Y-m-d') ?>" required></label>
                     <label>Item<br>
-                        <select name="item_name" id="item_name" required>
+                        <select name="id_item" id="item_name" required>
                             <option value="">Selecione o item</option>
                             <?php foreach ($items as $item): ?>
-                                <option value="<?= e($item['item']) ?>"><?= e($item['item']) ?></option>
+                                <option value="<?= e($item['id_item']) ?>"><?= e($item['item']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </label>
@@ -237,14 +239,22 @@ function tabClass(string $tab): string
                         </label>
                     </div>
                     <div id="field-localidade" class="form-field hidden" style="display:none;">
-                        <label>Localidade<br>
-                            <select name="id_localidade">
-                                <option value="">Selecione o local</option>
-                                <?php foreach ($localidades as $localidade): ?>
-                                    <option value="<?= e($localidade['id_localidade']) ?>"><?= e($localidade['local']) ?></option>
-                                <?php endforeach; ?>
+                        <label>Secretaria<br>
+                            <select id="localidade_secretaria" name="localidade_secretaria">
+                                <option value="">Selecione a secretaria</option>
                             </select>
                         </label>
+                        <label>Divisão<br>
+                            <select id="localidade_divisao" name="localidade_divisao" disabled>
+                                <option value="">Selecione a divisão</option>
+                            </select>
+                        </label>
+                        <label>Setor<br>
+                            <select id="localidade_setor" name="localidade_setor" disabled>
+                                <option value="">Selecione o setor</option>
+                            </select>
+                        </label>
+                        <input type="hidden" name="localidade_path" id="localidade_path">
                     </div>
                     <div id="field-observacao" class="form-field hidden" style="display:none;">
                         <label>Observação<br><textarea name="observacao"></textarea></label>
@@ -329,7 +339,10 @@ function tabClass(string $tab): string
     <footer>
         <p>Estoque PHP | Projeto Docker + MySQL.</p>
     </footer>
+    <script>
+        window.LOCALIDADE_HIERARCHY = <?= json_encode($localidadeHierarchy, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    <script src="form.js?v=7"></script>
+    <script src="form.js?v=8"></script>
 </body>
 </html>

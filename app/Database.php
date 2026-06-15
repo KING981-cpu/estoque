@@ -68,7 +68,18 @@ SQL);
 
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS item (
             id_item INT PRIMARY KEY AUTO_INCREMENT,
-            item VARCHAR(50) NOT NULL
+            item VARCHAR(50) NOT NULL,
+            quantidade_minima INT NOT NULL DEFAULT 0,
+            quantidade_desejavel INT NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+
+        $this->ensureItemSchema();
+
+        $this->pdo->exec('CREATE TABLE IF NOT EXISTS item_notificacao_email (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            id_item INT NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            FOREIGN KEY (id_item) REFERENCES item(id_item)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
 
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS movimentacao (
@@ -86,6 +97,30 @@ SQL);
             FOREIGN KEY (id_localidade) REFERENCES localidade(id_localidade),
             FOREIGN KEY (id_item) REFERENCES item(id_item)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+    }
+
+    private function ensureItemSchema(): void
+    {
+        $columns = $this->getTableColumns('item');
+        if (empty($columns)) {
+            return;
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            if (!isset($columns['quantidade_minima'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN quantidade_minima INT NOT NULL DEFAULT 0');
+            }
+
+            if (!isset($columns['quantidade_desejavel'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN quantidade_desejavel INT NOT NULL DEFAULT 0');
+            }
+
+            $this->pdo->commit();
+        } catch (\Throwable $exception) {
+            $this->pdo->rollBack();
+            throw $exception;
+        }
     }
 
     public function pdo(): \PDO

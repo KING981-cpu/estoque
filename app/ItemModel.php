@@ -33,12 +33,40 @@ class ItemModel
         return (int)$this->pdo->lastInsertId();
     }
 
+    public function updateThresholds(int $itemId, int $minQuantity, int $desiredQuantity): bool
+    {
+        $statement = $this->pdo->prepare('UPDATE item SET quantidade_minima = ?, quantidade_desejavel = ? WHERE id_item = ?');
+        return $statement->execute([$minQuantity, $desiredQuantity, $itemId]);
+    }
+
     public function findByName(string $name): ?array
     {
         $statement = $this->pdo->prepare('SELECT * FROM item WHERE item = ? LIMIT 1');
         $statement->execute([$name]);
         $item = $statement->fetch(\PDO::FETCH_ASSOC);
         return $item ?: null;
+    }
+
+    public function findWithThresholds(int $id): ?array
+    {
+        $statement = $this->pdo->prepare('SELECT * FROM item WHERE id_item = ? LIMIT 1');
+        $statement->execute([$id]);
+        $item = $statement->fetch(\PDO::FETCH_ASSOC);
+        return $item ?: null;
+    }
+
+    public function addNotificationEmail(int $itemId, string $email): int
+    {
+        $statement = $this->pdo->prepare('INSERT INTO item_notificacao_email (id_item, email) VALUES (?, ?)');
+        $statement->execute([$itemId, $email]);
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    public function listNotificationEmails(int $itemId): array
+    {
+        $statement = $this->pdo->prepare('SELECT email FROM item_notificacao_email WHERE id_item = ?');
+        $statement->execute([$itemId]);
+        return array_map(fn($row) => $row['email'], $statement->fetchAll());
     }
 
     public function getOrCreateByName(string $name): int

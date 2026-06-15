@@ -10,10 +10,22 @@ services:
       DB_NAME: estoque
       DB_USER: estoque
       DB_PASS: estoque_pass
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_FROM_EMAIL: alerta@estoque.local
     depends_on:
       - db
+      - mailhog
     volumes:
       - .:/var/www/html
+    networks:
+      - estoque_network
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: estoque_mailhog
+    ports:
+      - "8025:8025"
     networks:
       - estoque_network
 

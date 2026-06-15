@@ -1,165 +1,156 @@
 # Estoque
 
-Site PHP com Docker e banco MySQL, construído sobre a documentação do projeto e com a estrutura de banco solicitada.
+## O que é este projeto
 
-## Estrutura do banco
+Este projeto é um sistema simples de controle de estoque construído em PHP com MySQL e Docker. Ele permite:
 
-A aplicação usa o esquema exato:
+- cadastrar itens
+- registrar movimentações de estoque (entrada e saída)
+- controlar uso por consumo ou empréstimo
+- associar movimentações a funcionários e localidades
+- armazenar assinaturas digitais como prova de registro
+- gerar relatório de saldo por item
 
-```sql
-create database estoque;
-use estoque;
-create table funcionario(
-  id_funcionario int primary key auto_increment,
-  nome varchar(100) not null
-);
+## Dor que o projeto resolve
 
-create table localidade(
-  id_localidade int primary key auto_increment,
-  secretaria varchar(255) not null,
-  divisao varchar(255) not null,
-  setor varchar(255) not null
-);
+A dor atendida por este sistema é a falta de controle centralizado de estoque em um ambiente administrativo com:
 
-create table item(
-  id_item int primary key auto_increment,
-  item varchar(50) not null
-);
+- itens registrados manualmente
+- entradas e saídas documentadas
+- assinaturas de quem movimentou o item
+- localidades organizadas em secretaria > divisão > setor
 
-create table movimentacao(
-  id_movimentacao int primary key auto_increment,
-  tipo enum('entrada', 'saída') not null,
-  data_item date not null,
-  quantidade int not null,
-  assinatura longtext not null,
-  uso enum('Consumo', 'Empréstimo') not null,
-  observação varchar(200) not null,
+Ele foi pensado para substituir planilhas e registros manuais, fornecendo uma interface única para registrar e consultar estoques com validação básica.
 
-  id_funcionario int,
-  id_localidade int,
-  id_item int,
+## Para quem é este projeto
 
-  foreign key (id_funcionario) references funcionario(id_funcionario),
-  foreign key (id_localidade) references localidade(id_localidade),
-  foreign key (id_item) references item(id_item)
-);
-```
+- equipes de compras ou almoxarifado que precisam registrar entradas e saídas de materiais
+- gestores que precisam de histórico de movimentações
+- operações que exigem assinatura e vínculo de movimentação com funcionários e locais
 
-## Localidades e origem dos dados
+## O que o sistema faz
 
-A hierarquia de `localidade` é representada em três colunas textuais:
+1. Cadastro de itens
+   - o usuário informa o nome do item
+   - pode definir quantidade inicial na criação
+   - se o item já existir, o sistema atualiza o saldo em vez de criar item duplicado
 
-- `secretaria` varchar(255)
-- `divisao` varchar(255)
-- `setor` varchar(255)
+2. Registro de movimentações
+   - tipo: `entrada` ou `saída`
+   - uso: `Consumo` ou `Empréstimo`
+   - data do movimento
+   - item e quantidade
+   - funcionário responsável (para empréstimo)
+   - localidade (secretaria > divisão > setor)
+   - observação opcional
+   - assinatura digital em canvas
 
-Isso permite atualizar a árvore de localidades sem depender de um ENUM fixo no banco de dados.
+3. Histórico
+   - lista de movimentações registradas
+   - visualização de assinatura como miniatura clicável
 
-A hierarquia de `localidade` é carregada de dois lugares:
+4. Relatório de estoque
+   - mostra saldo inicial, retiradas e saldo final por item
 
-- `data/localidade_hierarchy.json` — JSON de hierarquia usado pela aplicação quando disponível
-- `ORGANOGRAMA DAS SECRETARIAS CHEFES E DIRETORES - ATUALIZADO 2026-04-20.xlsx` — fonte original de dados lidos por `app/SpreadsheetLocationLoader.php`
+5. Gestão de limites e alertas
+   - definir quantidade mínima e desejável para cada item
+   - registrar e-mails de destino para receber notificações de estoque baixo
+   - alertar automaticamente quando o estoque atingir ou ficar abaixo do mínimo
+   - estimar em quantos dias o item chegará ao mínimo com base no consumo histórico
+   - indicar quantidade recomendada para compra visando manter o estoque acima do mínimo ou desejável
 
-O arquivo `app/SpreadsheetLocationLoader.php` prefere o JSON local e recorre à planilha apenas se necessário.
+## Novas funcionalidades implementadas
+- Os itens agora armazenam `quantidade_minima` e `quantidade_desejavel`.
+- Há nova tabela `item_notificacao_email` para guardar destinatários de alerta por item.
+- A página de itens permite configurar limites e adicionar emails de notificação.
+- O relatório agora também mostra consumo mensal por item e mês.
+- O cálculo de recomendação considera estoque atual, mínimo/desejável e consumo dos últimos 30 dias.
+- O sistema envia alertas por e-mail quando um item fica abaixo do mínimo.
 
-## Documentação do projeto
+## Como usar as notificações de estoque
+1. Cadastre ou selecione um item em `Itens`.
+2. Preencha `Quantidade Mínima` e `Quantidade Desejável`.
+3. Adicione pelo menos um endereço de e-mail válido em `Email de alerta`.
+4. Registre movimentações de saída com `Uso = Consumo`.
+5. Quando o saldo atingir ou ficar abaixo do mínimo, o sistema tentará enviar um e-mail.
 
-Os arquivos de documentação estão disponíveis em:
+> Observação: o envio de e-mail utiliza a função PHP `mail()` e requer um servidor de e-mail configurado no ambiente.
 
-- `openspec/` — especificações e documentos relacionados à API e ao projeto
-- `README.md` — documentação principal do projeto
+## Estrutura do projeto
 
-## Como executar
+- `docker-compose.yml` - define contêineres PHP e MySQL
+- `Dockerfile` - imagem PHP com `pdo_mysql`
+- `db/init.sql` - script inicial do banco
+- `app/Database.php` - conexão com MySQL e criação automática de esquema
+- `app/InventoryApp.php` - regras e fluxos de negócio
+- `app/ItemModel.php` - CRUD de itens e saldo
+- `app/FuncionarioModel.php` - funcionários disponíveis para movimentações
+- `app/LocalidadeModel.php` - localidades hierárquicas
+- `app/MovementModel.php` - grava entradas e saídas
+- `app/SpreadsheetLocationLoader.php` - carrega hierarquia de localidades de JSON ou XLSX
+- `public/index.php` - interface web principal
+- `public/style.css` - estilo visual
+- `public/form.js` - comportamento do formulário de movimentação
+- `data/localidade_hierarchy.json` - árvore de localidades usada pela UI
+- `openspec/` - pasta de documentação e especificações do projeto
 
-1. Entre no diretório do projeto:
-   ```bash
-   cd /opt/projetos/estoque
-   ```
-2. Inicie os containers com Docker Compose:
-   ```bash
-   docker compose up -d --build
-   ```
-3. Acesse o site:
-   ```
-   http://localhost:8001
-   ```
+## Banco de dados
 
-## O que está disponível
+O sistema usa MySQL e cria automaticamente as tabelas necessárias se ainda não existirem.
 
-- `docker-compose.yml` — orquestração do app PHP e do MySQL
-- `Dockerfile` — imagem PHP com `pdo_mysql`
-- `db/init.sql` — inicialização do banco `estoque` e tabelas
-- `app/Database.php` — conexão MySQL e criação de esquema
-- `app/ItemModel.php` — cadastro de itens
-- `app/FuncionarioModel.php` — leitura de funcionários para registro de movimentações
-- `app/LocalidadeModel.php` — leitura de localidades com `secretaria`, `divisao` e `setor`
-- `app/MovementModel.php` — registro de movimentações
-- `app/InventoryApp.php` — lógica de aplicação
-- `app/SpreadsheetLocationLoader.php` — carregamento de localidade por JSON ou XLSX
-- `data/localidade_hierarchy.json` — hierarquia de localidades usada pelo front-end e pela aplicação
-- `ORGANOGRAMA DAS SECRETARIAS CHEFES E DIRETORES - ATUALIZADO 2026-04-20.xlsx` — origem de dados de localidade
-- `openspec/` — documentação do projeto e especificações
-- `public/index.php` — interface web
-- `public/style.css` — layout do site
-- `public/form.js` — comportamento do formulário de localidade e movimentação
+Tabelas principais:
 
-## Uso básico
+- `funcionario`
+- `localidade` (`secretaria`, `divisao`, `setor`)
+- `item`
+- `movimentacao`
 
-- Cadastre itens e registre movimentações
-- Funcionários e localidades não são cadastrados por dashboards separados; são usados pelo formulário de movimentações a partir dos dados já existentes
-- Ao cadastrar um item, defina a quantidade inicial diretamente no formulário
-- Se o item já existir, não será criado novamente; a quantidade será adicionada ao estoque do item existente
-- Registre entradas e saídas de estoque
-- Visualize movimentações e histórico
-- Use o botão `Histórico` ao lado de `Movimentações` para acessar o histórico separado
-- No histórico, assinaturas são exibidas como miniaturas clicáveis para visualização ampliada
-- Use o botão `Relatório` para ver uma linha por item com: nome do item, quantidade inicial (total de entradas), quantidade retirada (total de saídas) e quantidade final
+A hierarquia de `localidade` é mantida em colunas textuais para permitir atualizações sem dependência de ENUMs fixos.
 
-## Notas
-
-- O MySQL usa `mysql:5.7` e expõe o banco em `localhost:3308`
-- O site roda em `localhost:8001`
-- O banco `estoque` é criado automaticamente no primeiro boot
-
-## Ambiente e segredos
-
-- `.env.example` é apenas um modelo de configuração. Nunca coloque dados reais nele.
-- Copie `.env.example` para `.env` e preencha todos os valores sensíveis.
-- `.env` está listado em `.gitignore` e só deve conter dados específicos do ambiente.
-- Dados sensíveis como tokens, senhas e endpoints privados devem ficar apenas em `.env`.
-- O código lê os valores do banco usando variáveis de ambiente.
-- A aplicação não usa GLPI; localidades são carregadas do banco local e da hierarquia de planilha definida em `app/SpreadsheetLocationLoader.php`.
-- Sempre verifique se não existe lixo de testes ou valores antigos nos arquivos `.env` e `.env.example`.
-- O formulário de movimentação deve ter campos limpos, bem ordenados e visibilidade condicional para: tipo de movimentação, uso, data, item, quantidade, funcionário, localidade, observação e assinatura.
-- Para entrada ou saída de consumo, exibir somente: tipo, uso, data, item, quantidade e assinatura.
-- Para saída por empréstimo, exibir: tipo, uso, data, item, quantidade, funcionário, localidade, observação e assinatura.
-- A assinatura deve ser feita com canvas de desenho e submetida como `assinatura_data` em campo oculto.
-- Remover o campo de descrição do item, pois ele não é necessário para o fluxo atual.
-- O item deve ser inserido em texto livre; não usar lista suspensa de itens na tela de movimentações.
-- Não misture HTML com CSS ou lógica JavaScript dentro do mesmo arquivo. Use `public/style.css` e `public/form.js` para isso.
-- Para conectar ao banco, use estas variáveis em `.env`:
-  - `DB_HOST`
-  - `DB_PORT`
-  - `DB_NAME`
-  - `DB_USER`
-  - `DB_PASS`
-
-### Criar `.env`
+## Como rodar
 
 No diretório do projeto:
 
 ```bash
 cd /opt/projetos/estoque
+docker compose up -d --build
+```
+
+Acesse em:
+
+```text
+http://localhost:8001
+```
+
+## Configuração de ambiente
+
+Copie o arquivo de exemplo:
+
+```bash
 cp .env.example .env
 ```
 
-Em seguida, configure `.env` com os valores reais do ambiente.
+Configure os valores de conexão do banco:
 
-## Regras de alteração
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASS`
 
-- Sempre documentar qualquer funcionalidade nova pedida antes de implementá-la.
-- Não alterar a estrutura do banco de dados existente sem solicitação explícita.
-- Novas funções podem usar tabelas ou campos adicionais apenas depois de aprovação e documentação.
-- Qualquer mudança deve ser registrada na documentação do projeto.
-- Não responda que o trabalho está concluído enquanto não estiver funcionando corretamente.
+## Documentação adicional
 
+- `openspec/` - local reservado para especificações e documentação extra do projeto
+- `data/localidade_hierarchy.json` - define a estrutura de secretarias, divisões e setores
+- `ORGANOGRAMA DAS SECRETARIAS CHEFES E DIRETORES - ATUALIZADO 2026-04-20.xlsx` - fonte de dados de localidade
+
+## Futuras melhorias
+
+Este projeto pode ser expandido com as seguintes funcionalidades de nível 2:
+
+- relatórios de consumo mensal para cada item
+- registro de quantidade mínima e quantidade desejável por item
+- envio de alerta por e-mail quando um item atingir ou ficar abaixo da quantidade mínima
+- cadastro de destinatários de e-mail para receber notificações
+- estimativa de quando cada item deve atingir a quantidade mínima com base no consumo histórico
+- sugestão de quantidade a comprar para manter os estoques acima da quantidade mínima ou desejável

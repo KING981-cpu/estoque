@@ -46,11 +46,13 @@ class MovementModel
     public function summary(): array
     {
         $query = 'SELECT i.item AS item_name,
+                         i.quantidade_minima,
+                         i.quantidade_desejavel,
                          SUM(CASE WHEN m.tipo = "entrada" THEN m.quantidade ELSE 0 END) AS quantidade_inicial,
                          SUM(CASE WHEN m.tipo = "saída" THEN m.quantidade ELSE 0 END) AS quantidade_retirada
                   FROM movimentacao m
                   LEFT JOIN item i ON m.id_item = i.id_item
-                  GROUP BY i.item
+                  GROUP BY i.id_item, i.item, i.quantidade_minima, i.quantidade_desejavel
                   ORDER BY i.item ASC';
 
         $statement = $this->pdo->prepare($query);
@@ -66,6 +68,8 @@ class MovementModel
 
             $summary[] = [
                 'item_name' => $itemName,
+                'quantidade_minima' => (int)($row['quantidade_minima'] ?? 0),
+                'quantidade_desejavel' => (int)($row['quantidade_desejavel'] ?? 0),
                 'quantidade_inicial' => $initialQuantity,
                 'quantidade_retirada' => $removedQuantity,
                 'quantidade_final' => $finalQuantity,
@@ -73,5 +77,41 @@ class MovementModel
         }
 
         return $summary;
+    }
+
+    /**
+     * Retorna o consumo mensal por item, agrupado por ano e mês.
+     */
+    public function monthlyConsumptionReport(string $yearMonth = null): array
+    {
+        $query = 'SELECT i.id_item,
+                         i.item AS item_name,
+                         DATE_FORMAT(m.data_item, "%Y-%m") AS mes,
+                         SUM(m.quantidade) AS consumo_mensal
+                  FROM movimentacao m
+                  JOIN item i ON m.id_item = i.id_item
+                  WHERE m.tipo = "saída" AND m.uso = "Consumo"';
+
+        if ($yearMonth !== null) {
+            $query .= ' AND DATE_FORMAT(m.data_item, "%Y-%m") = ?';
+        }
+
+        $query .= ' GROUP BY i.id_item, i.item, mes
+                   ORDER BY mes DESC, i.item ASC';
+
+        $statement = $this->pdo->prepare($query);
+        $statement->execute($yearMonth !== null ? [$yearMonth] : []);
+        return $statement->fetchAll();
+    }
+
+    /**
+     * Calcula o consumo total do item nos últimos N dias.
+     */
+    public function totalConsumptionLastDays(int $itemId, int $days): int
+    {
+        $statement = $this->pdo->prepare('SELECT COALESCE(SUM(quantidade), 0) AS total_consumo FROM movimentacao WHERE id_item = ? AND tipo = "saída" AND uso = "Consumo" AND data_item >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)');
+        $statement->execute([$itemId, $days]);
+        $row = $statement->fetch();
+        return (int)($row['total_consumo'] ?? 0);
     }
 }

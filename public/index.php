@@ -43,6 +43,25 @@ try {
         header('Location: ?tab=movimentacoes');
         exit;
     }
+
+    if ($action === 'update_item_settings') {
+        $itemId = !empty($_POST['item_id']) ? (int)$_POST['item_id'] : 0;
+        $minQuantity = max(0, (int)($_POST['quantidade_minima'] ?? 0));
+        $desiredQuantity = max(0, (int)($_POST['quantidade_desejavel'] ?? 0));
+
+        if ($itemId > 0) {
+            $app->updateItemThresholds($itemId, $minQuantity, $desiredQuantity);
+
+            $notificationEmail = trim($_POST['notification_email'] ?? '');
+            if ($notificationEmail !== '' && filter_var($notificationEmail, FILTER_VALIDATE_EMAIL)) {
+                $app->addItemNotificationEmail($itemId, $notificationEmail);
+            }
+        }
+
+        $alert = 'Configurações do item atualizadas com sucesso.';
+        header('Location: ?tab=items');
+        exit;
+    }
 } catch (\Throwable $error) {
     $alert = 'Erro: ' . htmlspecialchars($error->getMessage(), ENT_QUOTES, 'UTF-8');
 }
@@ -53,6 +72,7 @@ $localidades = $app->getLocalidades();
 $localidadeHierarchy = $app->getLocalidadeHierarchy();
 $movimentacoes = $app->getMovements();
 $movementSummary = $app->getMovementSummary();
+$monthlyConsumption = $app->getMonthlyConsumptionReport();
 
 
 function e(string $text): string
@@ -115,14 +135,41 @@ function tabClass(string $tab): string
                                 <th>ID</th>
                                 <th>Item</th>
                                 <th>Saldo Atual</th>
+                                <th>Quantidade Mínima</th>
+                                <th>Quantidade Desejável</th>
+                                <th>Estimativa até o mínimo</th>
+                                <th>Recomendação de compra</th>
+                                <th>Destinatários</th>
+                                <th>Configuração</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($items as $item): ?>
+                                <?php $itemId = (int)$item['id_item'];
+                                      $stock = $app->getStock($itemId);
+                                      $estimateDays = $app->estimateDaysUntilMinimum($itemId);
+                                      $recommendedQuantity = $app->recommendedPurchaseQuantity($itemId);
+                                      $notificationEmails = $app->getItemNotificationEmails($itemId);
+                                ?>
                                 <tr>
-                                    <td><?= e($item['id_item']) ?></td>
+                                    <td><?= e($itemId) ?></td>
                                     <td><?= e($item['item']) ?></td>
-                                    <td><?= e($app->getStock((int)$item['id_item'])) ?></td>
+                                    <td><?= e((string)$stock) ?></td>
+                                    <td><?= e((string)((int)($item['quantidade_minima'] ?? 0))) ?></td>
+                                    <td><?= e((string)((int)($item['quantidade_desejavel'] ?? 0))) ?></td>
+                                    <td><?= e($estimateDays === null ? 'sem consumo suficiente' : sprintf('%.1f dias', $estimateDays)) ?></td>
+                                    <td><?= e((string)($recommendedQuantity ?? 0)) ?></td>
+                                    <td><?= e(implode(', ', $notificationEmails)) ?></td>
+                                    <td>
+                                        <form method="post" class="item-settings-form">
+                                            <input type="hidden" name="action" value="update_item_settings">
+                                            <input type="hidden" name="item_id" value="<?= e($itemId) ?>">
+                                            <label>Min<br><input type="number" name="quantidade_minima" min="0" value="<?= e((string)((int)($item['quantidade_minima'] ?? 0))) ?>" style="width:70px"></label>
+                                            <label>Desejável<br><input type="number" name="quantidade_desejavel" min="0" value="<?= e((string)((int)($item['quantidade_desejavel'] ?? 0))) ?>" style="width:70px"></label>
+                                            <label>Email<br><input type="email" name="notification_email" placeholder="destinatário" style="width:155px"></label>
+                                            <button type="submit">Salvar</button>
+                                        </form>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -255,6 +302,31 @@ function tabClass(string $tab): string
                                     <td><?= e((string)$row['quantidade_inicial']) ?></td>
                                     <td><?= e((string)$row['quantidade_retirada']) ?></td>
                                     <td><?= e((string)$row['quantidade_final']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </section>
+            <section>
+                <h2>Relatório de Consumo Mensal</h2>
+                <?php if (empty($monthlyConsumption)): ?>
+                    <p>Nenhum consumo registrado para geração do relatório.</p>
+                <?php else: ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mês</th>
+                                <th>Item</th>
+                                <th>Consumo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($monthlyConsumption as $row): ?>
+                                <tr>
+                                    <td><?= e($row['mes']) ?></td>
+                                    <td><?= e($row['item_name']) ?></td>
+                                    <td><?= e((string)$row['consumo_mensal']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

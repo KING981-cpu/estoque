@@ -89,6 +89,45 @@ class InventoryApp
         return $this->localidades->save($local);
     }
 
+    public function getStock(int $itemId): int
+    {
+        return $this->items->getStock($itemId);
+    }
+
+    /**
+     * Retorna o item com os campos de limite mínimo e desejável.
+     */
+    public function getItemWithThresholds(int $itemId): ?array
+    {
+        return $this->items->findWithThresholds($itemId);
+    }
+
+    /**
+     * Busca os e-mails cadastrados para notificações deste item.
+     */
+    public function getItemNotificationEmails(int $itemId): array
+    {
+        return $this->items->listNotificationEmails($itemId);
+    }
+
+    public function addItemNotificationEmail(int $itemId, string $email): int
+    {
+        return $this->items->addNotificationEmail($itemId, $email);
+    }
+
+    public function updateItemThresholds(int $itemId, int $minQuantity, int $desiredQuantity): bool
+    {
+        return $this->items->updateThresholds($itemId, $minQuantity, $desiredQuantity);
+    }
+
+    /**
+     * Retorna o relatório de consumo mensal de cada item.
+     */
+    public function getMonthlyConsumptionReport(string $yearMonth = null): array
+    {
+        return $this->movements->monthlyConsumptionReport($yearMonth);
+    }
+
     public function recordMovimentacao(array $data): int
     {
         $itemId = !empty($data['id_item']) ? (int)$data['id_item'] : null;
@@ -108,7 +147,7 @@ class InventoryApp
             $localidadeId = $this->localidades->ensureExists(trim($data['localidade_path']));
         }
 
-        return $this->movements->record(
+        $movementId = $this->movements->record(
             $itemId,
             $data['tipo'],
             $data['data_item'],
@@ -119,10 +158,145 @@ class InventoryApp
             !empty($data['id_funcionario']) ? (int)$data['id_funcionario'] : null,
             $localidadeId
         );
+
+        $stock = $this->getStock($itemId);
+        $item = $this->getItemWithThresholds($itemId);
+
+        if ($item !== null && $stock <= (int)$item['quantidade_minima']) {
+            $this->sendLowStockNotification($item, $stock);
+        }
+
+        return $movementId;
     }
 
-    public function getStock(int $itemId): int
+    public function estimateDaysUntilMinimum(int $itemId, int $windowDays = 30): ?float
     {
-        return $this->items->getStock($itemId);
+        $item = $this->getItemWithThresholds($itemId);
+        if ($item === null) {
+            return null;
+        }
+
+        $stock = $this->getStock($itemId);
+        $minimum = (int)$item['quantidade_minima'];
+        if ($stock <= $minimum) {
+            return 0.0;
+        }
+
+        $consumption = $this->movements->totalConsumptionLastDays($itemId, $windowDays);
+        if ($consumption <= 0) {
+            return null;
+        }
+
+        $dailyAverage = $consumption / $windowDays;
+        return max(0.0, ($stock - $minimum) / $dailyAverage);
+    }
+
+    public function recommendedPurchaseQuantity(int $itemId): ?int
+    {
+        $item = $this->getItemWithThresholds($itemId);
+        if ($item === null) {
+            return null;
+        }
+
+        $stock = $this->getStock($itemId);
+        $target = max((int)$item['quantidade_minima'], (int)$item['quantidade_desejavel']);
+
+        if ($stock >= $target) {
+            return 0;
+        }
+
+        $additionalBuffer = (int)ceil($this->movements->totalConsumptionLastDays($itemId, 30) / 30.0);
+        return max(0, $target - $stock + $additionalBuffer);
+    }
+
+    /**
+     * Envia notificação de estoque baixo para os destinatários do item.
+     */
+    private function sendLowStockNotification(array $item, int $stock): void
+    {
+        $emails = $this->getItemNotificationEmails((int)$item['id_item']);
+        if (empty($emails)) {
+            return;
+        }
+
+        $subject = sprintf('Alerta de estoque baixo: %s', $item['item']);
+        $message = sprintf(
+            "O item '%s' atingiu o nível mínimo ou está abaixo dele.\n\nQuantidade atual: %d\nQuantidade mínima: %d\nQuantidade desejável: %d\n\nEstimativa de dias até o mínimo: %s\n",
+            $item['item'],
+            $stock,
+            (int)$item['quantidade_minima'],
+            (int)$item['quantidade_desejavel'],
+            $this->formatEstimatedDays($this->estimateDaysUntilMinimum((int)$item['id_item']))
+        );
+
+        $message .= sprintf("Recomendação de compra: comprar %d unidade(s) para voltar acima do desejável.\n", $this->recommendedPurchaseQuantity((int)$item['id_item']) ?? 0);
+
+        foreach ($emails as $email) {
+            $this->sendEmail($email, $subject, $message);
+        }
+    }
+
+    private function sendEmail(string $to, string $subject, string $body): bool
+    {
+        $smtpHost = getenv('SMTP_HOST') ?: 'mailhog';
+        $smtpPort = (int)(getenv('SMTP_PORT') ?: 1025);
+        $fromEmail = getenv('SMTP_FROM_EMAIL') ?: 'alerta@estoque.local';
+
+        $connection = stream_socket_client("tcp://{$smtpHost}:{$smtpPort}", $errno, $errstr, 5);
+        if ($connection === false) {
+            return false;
+        }
+
+        stream_set_timeout($connection, 5);
+
+        $this->smtpRead($connection);
+        $this->smtpWrite($connection, "EHLO estoque.local");
+        $this->smtpWrite($connection, "MAIL FROM:<{$fromEmail}>");
+        $this->smtpWrite($connection, "RCPT TO:<{$to}>");
+        $this->smtpWrite($connection, "DATA");
+
+        $headers = "From: {$fromEmail}\r\n";
+        $headers .= "To: {$to}\r\n";
+        $headers .= "Subject: {$subject}\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $headers .= "\r\n";
+
+        $body = str_replace("\n.", "\n..", $body);
+        $message = $headers . $body . "\r\n.";
+        fwrite($connection, $message . "\r\n");
+        $this->smtpRead($connection);
+        $this->smtpWrite($connection, "QUIT");
+        fclose($connection);
+
+        return true;
+    }
+
+    private function smtpWrite($connection, string $command): void
+    {
+        fwrite($connection, $command . "\r\n");
+        $this->smtpRead($connection);
+    }
+
+    private function smtpRead($connection): void
+    {
+        while (($line = fgets($connection)) !== false) {
+            if (preg_match('/^\d{3} /', $line)) {
+                break;
+            }
+        }
+    }
+
+    private function formatEstimatedDays(?float $days): string
+    {
+        if ($days === null) {
+            return 'não há consumo registrado suficiente para estimativa';
+        }
+
+        if ($days === 0.0) {
+            return 'já atingido';
+        }
+
+        return sprintf('%.1f dias', $days);
     }
 }

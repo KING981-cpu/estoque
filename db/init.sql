@@ -15,7 +15,16 @@ CREATE TABLE IF NOT EXISTS localidade (
 
 CREATE TABLE IF NOT EXISTS item (
   id_item INT PRIMARY KEY AUTO_INCREMENT,
-  item VARCHAR(50) NOT NULL
+  item VARCHAR(50) NOT NULL,
+  quantidade_minima INT NOT NULL DEFAULT 0,
+  quantidade_desejavel INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS item_notificacao_email (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  id_item INT NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  FOREIGN KEY (id_item) REFERENCES item(id_item)
 );
 
 CREATE TABLE IF NOT EXISTS movimentacao (

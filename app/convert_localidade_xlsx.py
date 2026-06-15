@@ -61,7 +61,12 @@ def is_header_row(text):
 
 
 def is_division(text):
-    return bool(re.search(r'diretor.*divis', text, re.I))
+    lower = text.lower()
+    if re.search(r'\bdivis(ão|ao)\b', lower):
+        return True
+    if re.search(r'\bdiretor.*divis(ão|ao)\b', lower):
+        return True
+    return False
 
 
 def is_sector(text):

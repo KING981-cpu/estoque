@@ -24,8 +24,16 @@ services:
   mailhog:
     image: mailhog/mailhog
     container_name: estoque_mailhog
+    restart: unless-stopped
+    command:
+      - "-storage"
+      - "maildir"
+      - "-maildir-path"
+      - "/mailhog"
     ports:
       - "8025:8025"
+    volumes:
+      - ./mailhog_data:/mailhog
     networks:
       - estoque_network
 

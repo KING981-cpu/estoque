@@ -70,9 +70,53 @@ $items = $app->getItems();
 $funcionarios = $app->getFuncionarios();
 $localidades = $app->getLocalidades();
 $localidadeHierarchy = $app->getLocalidadeHierarchy();
-$movimentacoes = $app->getMovements();
-$movementSummary = $app->getMovementSummary();
-$monthlyConsumption = $app->getMonthlyConsumptionReport();
+$movementHistory = $app->getMovements();
+
+$report = $_GET['report'] ?? 'movimentacoes';
+$allowedReports = ['movimentacoes', 'consumo', 'estoque'];
+if (!in_array($report, $allowedReports, true)) {
+    $report = 'movimentacoes';
+}
+
+$perPage = max(5, min(100, (int)($_GET['per_page'] ?? 10)));
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$reportYear = preg_match('/^\d{4}$/', $_GET['year'] ?? '') ? $_GET['year'] : date('Y');
+$reportMonth = preg_match('/^(0[1-9]|1[0-2])$/', $_GET['month'] ?? '') ? $_GET['month'] : date('m');
+$yearMonthFilter = $report === 'consumo' ? sprintf('%s-%s', $reportYear, $reportMonth) : null;
+$monthlyConsumption = $app->getMonthlyConsumptionReport($yearMonthFilter);
+
+$movementTotal = count($movementHistory);
+$movementPages = (int)max(1, ceil($movementTotal / $perPage));
+$movementHistoryPaged = array_slice($movementHistory, ($page - 1) * $perPage, $perPage);
+
+$historyTotal = $movementTotal;
+$historyPages = $movementPages;
+$historyPaged = $movementHistoryPaged;
+
+$monthlyTotal = count($monthlyConsumption);
+$monthlyPages = (int)max(1, ceil($monthlyTotal / $perPage));
+$monthlyConsumptionPaged = array_slice($monthlyConsumption, ($page - 1) * $perPage, $perPage);
+
+$itemReportRows = [];
+foreach ($items as $item) {
+    $itemId = (int)$item['id_item'];
+    $stock = $app->getStock($itemId);
+    $estimateDays = $app->estimateDaysUntilMinimum($itemId);
+    $recommendedQuantity = $app->recommendedPurchaseQuantity($itemId);
+    $notificationEmails = $app->getItemNotificationEmails($itemId);
+
+    $itemReportRows[] = [
+        'id_item' => $itemId,
+        'item_name' => $item['item'],
+        'quantidade_minima' => (int)($item['quantidade_minima'] ?? 0),
+        'quantidade_desejavel' => (int)($item['quantidade_desejavel'] ?? 0),
+        'saldo_atual' => $stock,
+        'estimativa' => $estimateDays,
+        'recomendacao' => $recommendedQuantity,
+        'notification_emails' => $notificationEmails,
+    ];
+}
 
 
 function e(string $text): string
@@ -134,47 +178,19 @@ function tabClass(string $tab): string
                             <tr>
                                 <th>ID</th>
                                 <th>Item</th>
-                                <th>Saldo Atual</th>
-                                <th>Quantidade Mínima</th>
-                                <th>Quantidade Desejável</th>
-                                <th>Estimativa até o mínimo</th>
-                                <th>Recomendação de compra</th>
-                                <th>Destinatários</th>
-                                <th>Configuração</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($items as $item): ?>
-                                <?php $itemId = (int)$item['id_item'];
-                                      $stock = $app->getStock($itemId);
-                                      $estimateDays = $app->estimateDaysUntilMinimum($itemId);
-                                      $recommendedQuantity = $app->recommendedPurchaseQuantity($itemId);
-                                      $notificationEmails = $app->getItemNotificationEmails($itemId);
-                                ?>
                                 <tr>
-                                    <td><?= e($itemId) ?></td>
+                                    <td><?= e((string)$item['id_item']) ?></td>
                                     <td><?= e($item['item']) ?></td>
-                                    <td><?= e((string)$stock) ?></td>
-                                    <td><?= e((string)((int)($item['quantidade_minima'] ?? 0))) ?></td>
-                                    <td><?= e((string)((int)($item['quantidade_desejavel'] ?? 0))) ?></td>
-                                    <td><?= e($estimateDays === null ? 'sem consumo suficiente' : sprintf('%.1f dias', $estimateDays)) ?></td>
-                                    <td><?= e((string)($recommendedQuantity ?? 0)) ?></td>
-                                    <td><?= e(implode(', ', $notificationEmails)) ?></td>
-                                    <td>
-                                        <form method="post" class="item-settings-form">
-                                            <input type="hidden" name="action" value="update_item_settings">
-                                            <input type="hidden" name="item_id" value="<?= e($itemId) ?>">
-                                            <label>Min<br><input type="number" name="quantidade_minima" min="0" value="<?= e((string)((int)($item['quantidade_minima'] ?? 0))) ?>" style="width:70px"></label>
-                                            <label>Desejável<br><input type="number" name="quantidade_desejavel" min="0" value="<?= e((string)((int)($item['quantidade_desejavel'] ?? 0))) ?>" style="width:70px"></label>
-                                            <label>Email<br><input type="email" name="notification_email" placeholder="destinatário" style="width:155px"></label>
-                                            <button type="submit">Salvar</button>
-                                        </form>
-                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 <?php endif; ?>
+                <p class="note">As informações de quantidade mínima, desejável, e-mails de alerta, estimativa e recomendação de compra estão disponíveis no dashboard Relatórios.</p>
             </section>
         <?php elseif ($activeTab === 'movimentacoes'): ?>
             <section>
@@ -244,9 +260,22 @@ function tabClass(string $tab): string
         <?php elseif ($activeTab === 'historico'): ?>
             <section>
                 <h2>Histórico de Movimentações</h2>
+                <?php $movimentacoes = $historyPaged; ?>
                 <?php if (empty($movimentacoes)): ?>
                     <p>Nenhuma movimentação registrada.</p>
                 <?php else: ?>
+                    <div class="table-actions">
+                        <form method="get" class="inline-form">
+                            <input type="hidden" name="tab" value="historico">
+                            <label>Registros por página<br>
+                                <select name="per_page" onchange="this.form.submit()">
+                                    <?php foreach ([5, 10, 20, 50] as $option): ?>
+                                        <option value="<?= e((string)$option) ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= e((string)$option) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                        </form>
+                    </div>
                     <table>
                         <thead>
                             <tr>
@@ -278,61 +307,214 @@ function tabClass(string $tab): string
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php if ($historyPages > 1): ?>
+                        <div class="pagination">
+                            <?php for ($i = 1; $i <= $historyPages; $i++): ?>
+                                <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=historico&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?>"><?= e((string)$i) ?></a>
+                            <?php endfor; ?>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </section>
         <?php elseif ($activeTab === 'relatorio'): ?>
             <section>
-                <h2>Relatório de Movimentações</h2>
-                <?php if (empty($movementSummary)): ?>
-                    <p>Nenhuma movimentação registrada.</p>
-                <?php else: ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Quantidade Inicial</th>
-                                <th>Quantidade Retirada</th>
-                                <th>Quantidade Final</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($movementSummary as $row): ?>
-                                <tr>
-                                    <td><?= e($row['item_name']) ?></td>
-                                    <td><?= e((string)$row['quantidade_inicial']) ?></td>
-                                    <td><?= e((string)$row['quantidade_retirada']) ?></td>
-                                    <td><?= e((string)$row['quantidade_final']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
+                <h2>Dashboard Relatórios</h2>
+                <div class="report-buttons">
+                    <a class="<?= $report === 'movimentacoes' ? 'report-button active' : 'report-button' ?>" href="?tab=relatorio&report=movimentacoes&per_page=<?= e((string)$perPage) ?>">Relatório de Movimentações</a>
+                    <a class="<?= $report === 'consumo' ? 'report-button active' : 'report-button' ?>" href="?tab=relatorio&report=consumo&per_page=<?= e((string)$perPage) ?>">Relatório de Consumo Mensal</a>
+                    <a class="<?= $report === 'estoque' ? 'report-button active' : 'report-button' ?>" href="?tab=relatorio&report=estoque&per_page=<?= e((string)$perPage) ?>">Relatório de Estoque e Estimativa</a>
+                </div>
             </section>
-            <section>
-                <h2>Relatório de Consumo Mensal</h2>
-                <?php if (empty($monthlyConsumption)): ?>
-                    <p>Nenhum consumo registrado para geração do relatório.</p>
-                <?php else: ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Mês</th>
-                                <th>Item</th>
-                                <th>Consumo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($monthlyConsumption as $row): ?>
+
+            <?php if ($report === 'movimentacoes'): ?>
+                <section>
+                    <h2>Relatório de Movimentações</h2>
+                    <?php if (empty($movementHistory)): ?>
+                        <p>Nenhuma movimentação registrada.</p>
+                    <?php else: ?>
+                        <div class="table-actions">
+                            <form method="get" class="inline-form">
+                                <input type="hidden" name="tab" value="relatorio">
+                                <input type="hidden" name="report" value="movimentacoes">
+                                <label>Registros por página<br>
+                                    <select name="per_page" onchange="this.form.submit()">
+                                        <?php foreach ([5, 10, 20, 50] as $option): ?>
+                                            <option value="<?= e((string)$option) ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= e((string)$option) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </label>
+                            </form>
+                        </div>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td><?= e($row['mes']) ?></td>
-                                    <td><?= e($row['item_name']) ?></td>
-                                    <td><?= e((string)$row['consumo_mensal']) ?></td>
+                                    <th>ID</th>
+                                    <th>Data</th>
+                                    <th>Tipo</th>
+                                    <th>Item</th>
+                                    <th>Quantidade</th>
+                                    <th>Uso</th>
+                                    <th>Funcionário</th>
+                                    <th>Localidade</th>
+                                    <th>Assinatura</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </section>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($movementHistoryPaged as $movimento): ?>
+                                    <?php $assinatura = (!empty($movimento['assinatura']) && $movimento['assinatura'] !== '0') ? ('<img src="' . e($movimento['assinatura']) . '" class="img-assinatura-thumbnail" onclick="showSignature(this.src)">') : '---'; ?>
+                                    <tr>
+                                        <td><?= e((string)$movimento['id_movimentacao']) ?></td>
+                                        <td><?= e($movimento['data_item']) ?></td>
+                                        <td><?= e($movimento['tipo']) ?></td>
+                                        <td><?= e($movimento['item_name']) ?></td>
+                                        <td><?= e((string)$movimento['quantidade']) ?></td>
+                                        <td><?= e($movimento['uso']) ?></td>
+                                        <td><?= e($movimento['funcionario'] ?? '---') ?></td>
+                                        <td><?= e($movimento['localidade'] ?? '---') ?></td>
+                                        <td class="signature-cell"><?= $assinatura ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php if ($movementPages > 1): ?>
+                            <div class="pagination">
+                                <?php for ($i = 1; $i <= $movementPages; $i++): ?>
+                                    <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=relatorio&report=movimentacoes&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?>"><?= e((string)$i) ?></a>
+                                <?php endfor; ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </section>
+            <?php elseif ($report === 'consumo'): ?>
+                <section>
+                    <h2>Relatório de Consumo Mensal</h2>
+                    <form method="get" class="report-filter-form">
+                        <input type="hidden" name="tab" value="relatorio">
+                        <input type="hidden" name="report" value="consumo">
+                        <label>Ano<br>
+                            <select name="year">
+                                <?php for ($year = date('Y'); $year >= date('Y') - 3; $year--): ?>
+                                    <option value="<?= e((string)$year) ?>" <?= $reportYear === (string)$year ? 'selected' : '' ?>><?= e((string)$year) ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </label>
+                        <label>Mês<br>
+                            <select name="month">
+                                <?php for ($m = 1; $m <= 12; $m++): ?>
+                                    <?php $value = sprintf('%02d', $m); ?>
+                                    <option value="<?= e($value) ?>" <?= $reportMonth === $value ? 'selected' : '' ?>><?= e($value) ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </label>
+                        <label>Registros por página<br>
+                            <select name="per_page">
+                                <?php foreach ([5, 10, 20, 50] as $option): ?>
+                                    <option value="<?= e((string)$option) ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= e((string)$option) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                        <button type="submit">Filtrar</button>
+                    </form>
+                    <?php if (empty($monthlyConsumptionPaged)): ?>
+                        <p>Nenhum consumo registrado para o mês selecionado.</p>
+                    <?php else: ?>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Mês</th>
+                                    <th>Item</th>
+                                    <th>Consumo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($monthlyConsumptionPaged as $row): ?>
+                                    <tr>
+                                        <td><?= e($row['mes']) ?></td>
+                                        <td><?= e($row['item_name']) ?></td>
+                                        <td><?= e((string)$row['consumo_mensal']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        </table>
+                        <?php if ($monthlyPages > 1): ?>
+                            <div class="pagination">
+                                <?php for ($i = 1; $i <= $monthlyPages; $i++): ?>
+                                    <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=relatorio&report=consumo&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?>&year=<?= e($reportYear) ?>&month=<?= e($reportMonth) ?>"><?= e((string)$i) ?></a>
+                                <?php endfor; ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </section>
+            <?php elseif ($report === 'estoque'): ?>
+                <section>
+                    <h2>Relatório de Estoque e Estimativa</h2>
+                    <?php if (empty($itemReportRows)): ?>
+                        <p>Nenhum item cadastrado.</p>
+                    <?php else: ?>
+                        <?php $itemTotal = count($itemReportRows); ?>
+                        <?php $itemPages = (int)max(1, ceil($itemTotal / $perPage)); ?>
+                        <?php $itemReportRowsPaged = array_slice($itemReportRows, ($page - 1) * $perPage, $perPage); ?>
+                        <div class="table-actions">
+                            <form method="get" class="inline-form">
+                                <input type="hidden" name="tab" value="relatorio">
+                                <input type="hidden" name="report" value="estoque">
+                                <label>Registros por página<br>
+                                    <select name="per_page" onchange="this.form.submit()">
+                                        <?php foreach ([5, 10, 20, 50] as $option): ?>
+                                            <option value="<?= e((string)$option) ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= e((string)$option) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </label>
+                            </form>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Saldo Atual</th>
+                                    <th>Quantidade Mínima</th>
+                                    <th>Quantidade Desejável</th>
+                                    <th>Estimativa até o mínimo</th>
+                                    <th>Recomendação de compra</th>
+                                    <th>Destinatários</th>
+                                    <th>Configurar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($itemReportRowsPaged as $row): ?>
+                                    <tr>
+                                        <td><?= e($row['item_name']) ?></td>
+                                        <td><?= e((string)$row['saldo_atual']) ?></td>
+                                        <td><?= e((string)$row['quantidade_minima']) ?></td>
+                                        <td><?= e((string)$row['quantidade_desejavel']) ?></td>
+                                        <td><?= e($row['estimativa'] === null ? 'sem consumo suficiente' : sprintf('%.1f dias', $row['estimativa'])) ?></td>
+                                        <td><?= e((string)$row['recomendacao']) ?></td>
+                                        <td><?= e(implode(', ', $row['notification_emails'])) ?></td>
+                                        <td>
+                                            <form method="post" class="item-settings-form">
+                                                <input type="hidden" name="action" value="update_item_settings">
+                                                <input type="hidden" name="item_id" value="<?= e((string)$row['id_item']) ?>">
+                                                <label>Min<br><input type="number" name="quantidade_minima" min="0" value="<?= e((string)$row['quantidade_minima']) ?>" style="width:70px"></label>
+                                                <label>Desejável<br><input type="number" name="quantidade_desejavel" min="0" value="<?= e((string)$row['quantidade_desejavel']) ?>" style="width:70px"></label>
+                                                <label>Email<br><input type="email" name="notification_email" placeholder="destinatário" style="width:155px"></label>
+                                                <button type="submit">Salvar</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php if ($itemPages > 1): ?>
+                            <div class="pagination">
+                                <?php for ($i = 1; $i <= $itemPages; $i++): ?>
+                                    <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=relatorio&report=estoque&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?>"><?= e((string)$i) ?></a>
+                                <?php endfor; ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </section>
+            <?php endif; ?>
         <?php endif; ?>
     </main>
 

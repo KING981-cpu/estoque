@@ -64,6 +64,9 @@ Ele foi pensado para substituir planilhas e registros manuais, fornecendo uma in
 - Há nova tabela `item_notificacao_email` para guardar destinatários de alerta por item.
 - A página de itens permite configurar limites e adicionar emails de notificação.
 - O relatório agora também mostra consumo mensal por item e mês.
+- O relatório de movimentações mantém cada movimento separado, incluindo a data de registro, para evitar somatórios automáticos de entradas repetidas do mesmo item.
+- O painel de relatórios agora apresenta botões de seleção para Relatório de Movimentações, Relatório de Consumo Mensal e Relatório de Estoque e Estimativa.
+- Todos os relatórios permitem escolher quantos registros aparecem por página para não sobrecarregar a visualização.
 - O cálculo de recomendação considera estoque atual, mínimo/desejável e consumo dos últimos 30 dias.
 - O sistema envia alertas por e-mail quando um item fica abaixo do mínimo.
 
@@ -75,6 +78,13 @@ Ele foi pensado para substituir planilhas e registros manuais, fornecendo uma in
 5. Quando o saldo atingir ou ficar abaixo do mínimo, o sistema tentará enviar um e-mail.
 
 > Observação: o envio de e-mail utiliza a função PHP `mail()` e requer um servidor de e-mail configurado no ambiente.
+
+## Persistência de dados e regra de não perda
+- O projeto mantém persistência para o banco de dados MySQL no diretório `./db_data`.
+- Para o serviço de e-mail de desenvolvimento, o MailHog agora também grava os e-mails em disco no diretório `./mailhog_data`.
+- Essa configuração foi adicionada ao `docker-compose.yml` usando `-storage maildir` e `-maildir-path /mailhog`.
+- Com essa regra, mesmo que o container do MailHog seja recriado, o histórico de e-mails enviados permanece disponível.
+- Regra de projeto: `dados não podem ser perdidos` — todas as mensagens de alerta e dados de persistência devem ser armazenados em volumes duráveis.
 
 ## Estrutura do projeto
 

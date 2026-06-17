@@ -240,17 +240,52 @@ class InventoryApp
     {
         $smtpHost = getenv('SMTP_HOST') ?: 'mailhog';
         $smtpPort = (int)(getenv('SMTP_PORT') ?: 1025);
+        $smtpUser = getenv('SMTP_USER') ?: '';
+        $smtpPass = getenv('SMTP_PASS') ?: '';
+        $smtpSecure = strtolower((string)(getenv('SMTP_SECURE') ?: ''));
         $fromEmail = getenv('SMTP_FROM_EMAIL') ?: 'alerta@estoque.local';
+        $sent = $this->sendSmtpMessage($smtpHost, $smtpPort, $fromEmail, $to, $subject, $body, $smtpUser, $smtpPass, $smtpSecure);
 
-        $connection = stream_socket_client("tcp://{$smtpHost}:{$smtpPort}", $errno, $errstr, 5);
+        $monitorHost = getenv('SMTP_MONITOR_HOST');
+        if ($monitorHost !== false && $monitorHost !== '') {
+            $monitorPort = (int)(getenv('SMTP_MONITOR_PORT') ?: 1025);
+            $monitorFromEmail = getenv('SMTP_MONITOR_FROM_EMAIL') ?: $fromEmail;
+            $this->sendSmtpMessage($monitorHost, $monitorPort, $monitorFromEmail, $to, $subject, $body, '', '', strtolower((string)(getenv('SMTP_MONITOR_SECURE') ?: '')));
+        }
+
+        return $sent;
+    }
+
+    private function sendSmtpMessage(string $smtpHost, int $smtpPort, string $fromEmail, string $to, string $subject, string $body, string $smtpUser, string $smtpPass, string $smtpSecure): bool
+    {
+        $hostname = gethostname() ?: 'localhost';
+        $timeout = 10;
+
+        $transport = $smtpSecure === 'ssl' ? 'ssl' : 'tcp';
+        $connection = stream_socket_client("{$transport}://{$smtpHost}:{$smtpPort}", $errno, $errstr, $timeout);
         if ($connection === false) {
             return false;
         }
 
-        stream_set_timeout($connection, 5);
-
+        stream_set_timeout($connection, $timeout);
         $this->smtpRead($connection);
-        $this->smtpWrite($connection, "EHLO estoque.local");
+        $this->smtpWrite($connection, "EHLO {$hostname}");
+
+        if ($smtpSecure === 'tls') {
+            $this->smtpWrite($connection, 'STARTTLS');
+            if (!stream_socket_enable_crypto($connection, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                fclose($connection);
+                return false;
+            }
+            $this->smtpWrite($connection, "EHLO {$hostname}");
+        }
+
+        if ($smtpUser !== '' && $smtpPass !== '') {
+            $this->smtpWrite($connection, 'AUTH LOGIN');
+            $this->smtpWrite($connection, base64_encode($smtpUser));
+            $this->smtpWrite($connection, base64_encode($smtpPass));
+        }
+
         $this->smtpWrite($connection, "MAIL FROM:<{$fromEmail}>");
         $this->smtpWrite($connection, "RCPT TO:<{$to}>");
         $this->smtpWrite($connection, "DATA");

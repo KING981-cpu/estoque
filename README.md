@@ -67,7 +67,13 @@ Ele foi pensado para substituir planilhas e registros manuais, fornecendo uma in
 - O relatório de movimentações mantém cada movimento separado, incluindo a data de registro, para evitar somatórios automáticos de entradas repetidas do mesmo item.
 - O painel de relatórios agora apresenta botões de seleção para Relatório de Movimentações, Relatório de Consumo Mensal e Relatório de Estoque e Estimativa.
 - Todos os relatórios permitem escolher quantos registros aparecem por página para não sobrecarregar a visualização.
-- O cálculo de recomendação considera estoque atual, mínimo/desejável e consumo dos últimos 30 dias.
+- O cálculo de estimativa de esgotamento considera:
+  - estoque atual;
+  - quantidade mínima configurada;
+  - consumo total de saída com `uso = "Consumo"` desde o primeiro movimento de consumo do item;
+  - dias úteis (segunda a sexta-feira) entre a data do primeiro consumo e a data atual.
+- Para evitar divisão por zero, se a janela de dias úteis for menor ou igual a 0, o sistema usa 1 dia.
+- O cálculo é feito como `dailyAverage = total_consumption / windowDays` e `estimativa = (stock - minimum) / dailyAverage`.
 - O sistema envia alertas por e-mail quando um item fica abaixo do mínimo.
 
 ## Como usar as notificações de estoque

@@ -105,12 +105,23 @@ class MovementModel
     }
 
     /**
-     * Calcula o consumo total do item nos últimos N dias.
+     * Retorna a data do primeiro consumo registrado para o item.
      */
-    public function totalConsumptionLastDays(int $itemId, int $days): int
+    public function getFirstConsumptionDate(int $itemId): ?string
     {
-        $statement = $this->pdo->prepare('SELECT COALESCE(SUM(quantidade), 0) AS total_consumo FROM movimentacao WHERE id_item = ? AND tipo = "saída" AND uso = "Consumo" AND data_item >= DATE_SUB(CURRENT_DATE(), INTERVAL ? DAY)');
-        $statement->execute([$itemId, $days]);
+        $statement = $this->pdo->prepare('SELECT MIN(data_item) AS primeira_data FROM movimentacao WHERE id_item = ? AND tipo = "saída" AND uso = "Consumo"');
+        $statement->execute([$itemId]);
+        $row = $statement->fetch();
+        return !empty($row['primeira_data']) ? $row['primeira_data'] : null;
+    }
+
+    /**
+     * Retorna o consumo total do item a partir da data fornecida.
+     */
+    public function totalConsumptionSinceDate(int $itemId, string $startDate): int
+    {
+        $statement = $this->pdo->prepare('SELECT COALESCE(SUM(quantidade), 0) AS total_consumo FROM movimentacao WHERE id_item = ? AND tipo = "saída" AND uso = "Consumo" AND data_item >= ?');
+        $statement->execute([$itemId, $startDate]);
         $row = $statement->fetch();
         return (int)($row['total_consumo'] ?? 0);
     }

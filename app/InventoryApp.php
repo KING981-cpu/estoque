@@ -169,7 +169,7 @@ class InventoryApp
         return $movementId;
     }
 
-    public function estimateDaysUntilMinimum(int $itemId, int $windowDays = 30): ?float
+    public function estimateDaysUntilMinimum(int $itemId): ?float
     {
         $item = $this->getItemWithThresholds($itemId);
         if ($item === null) {
@@ -182,13 +182,47 @@ class InventoryApp
             return 0.0;
         }
 
-        $consumption = $this->movements->totalConsumptionLastDays($itemId, $windowDays);
+        $firstConsumptionDate = $this->movements->getFirstConsumptionDate($itemId);
+        if ($firstConsumptionDate === null) {
+            return null;
+        }
+
+        $windowDays = $this->calculateWorkingDays($firstConsumptionDate, date('Y-m-d'));
+        if ($windowDays <= 0) {
+            $windowDays = 1;
+        }
+
+        $consumption = $this->movements->totalConsumptionSinceDate($itemId, $firstConsumptionDate);
         if ($consumption <= 0) {
             return null;
         }
 
         $dailyAverage = $consumption / $windowDays;
+        if ($dailyAverage <= 0) {
+            return null;
+        }
+
         return max(0.0, ($stock - $minimum) / $dailyAverage);
+    }
+
+    private function calculateWorkingDays(string $startDate, string $endDate): int
+    {
+        $start = new DateTime($startDate);
+        $end = new DateTime($endDate);
+        if ($start > $end) {
+            return 0;
+        }
+
+        $workingDays = 0;
+        while ($start <= $end) {
+            $weekday = (int)$start->format('N');
+            if ($weekday >= 1 && $weekday <= 5) {
+                $workingDays++;
+            }
+            $start->modify('+1 day');
+        }
+
+        return $workingDays;
     }
 
     public function recommendedPurchaseQuantity(int $itemId): ?int
@@ -205,7 +239,7 @@ class InventoryApp
             return 0;
         }
 
-        $additionalBuffer = (int)ceil($this->movements->totalConsumptionLastDays($itemId, 30) / 30.0);
+        $additionalBuffer = (int)ceil($this->movements->totalConsumptionSinceDate($itemId, $this->movements->getFirstConsumptionDate($itemId) ?? date('Y-m-d')) / max(1, $this->calculateWorkingDays($this->movements->getFirstConsumptionDate($itemId) ?? date('Y-m-d'), date('Y-m-d'))) );
         return max(0, $target - $stock + $additionalBuffer);
     }
 

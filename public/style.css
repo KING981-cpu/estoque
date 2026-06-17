@@ -127,6 +127,14 @@ form select {
     font-size: 0.95rem;
     color: var(--text);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    white-space: normal;
+    line-height: 1.5;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+form select option {
+    white-space: normal;
 }
 
 form input:focus,
@@ -426,6 +434,27 @@ footer {
 @media (min-width: 900px) {
     .movement-form {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .movement-form #field-localidade,
+    .movement-form #field-funcionario {
+        grid-column: span 2;
+    }
+
+    .movement-form #field-localidade {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(280px, 1fr));
+        gap: 14px;
+    }
+
+    .movement-form #field-localidade label,
+    .movement-form #field-funcionario label {
+        width: 100%;
+    }
+
+    .movement-form #field-localidade select {
+        min-width: 280px;
+        max-width: none;
     }
 
     .movement-form .full-row,

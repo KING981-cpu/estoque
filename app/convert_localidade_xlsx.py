@@ -44,8 +44,36 @@ for rel in relations.findall('.//pkg:Relationship', namespaces):
         relmap[rid] = target
 
 
+KNOWN_CORRECTIONS = {
+    'Chefe do Setor de Almoxarifado e Distribuiçã': 'Chefe do Setor de Almoxarifado e Distribuição',
+    'Diretor da Divisão de Atenção Primári': 'Diretor da Divisão de Atenção Primária',
+    'Diretor da Divisão de Educação Permanente e Humanizaçã': 'Diretor da Divisão de Educação Permanente e Humanização',
+    'Diretor da Divisão de Gestão Logístic': 'Diretor da Divisão de Gestão Logística',
+    'Diretor da Divisão de Gestão Operaciona': 'Diretor da Divisão de Gestão Operacional',
+    'Divisão de Cadastro e Gestão da Dívida Ativ': 'Divisão de Cadastro e Gestão da Dívida Ativa',
+    'Divisão de Fiscalização Tributári': 'Divisão de Fiscalização Tributária',
+    'Divisão de Tecnologia da Informaçã': 'Divisão de Tecnologia da Informação',
+    'Setor de Cadastro Imobiliári': 'Setor de Cadastro Imobiliário',
+    'Setor de Cadastro Mobiliári': 'Setor de Cadastro Mobiliário',
+    'Setor de Gestão de Vínculos, Atos e Sistemas de Escrituração Digita': 'Setor de Gestão de Vínculos, Atos e Sistemas de Escrituração Digital',
+    'Setor de Infraestrutura de Rede e Servidore': 'Setor de Infraestrutura de Rede e Servidores',
+    'Setor de Planejamento e Formalização das Contrataçõe': 'Setor de Planejamento e Formalização das Contratações',
+    'Setor de Planejamento e Orçament': 'Setor de Planejamento e Orçamento',
+    'Setor de Execução Orçamentári': 'Setor de Execução Orçamentária',
+    'Setor de Tesourari': 'Setor de Tesouraria',
+    'Setor de Vigilância Epidemiológic': 'Setor de Vigilância Epidemiológica',
+    'Setor de Vigilância Sanitári': 'Setor de Vigilância Sanitária',
+    'Setor Desenvolvimento': 'Setor de Desenvolvimento',
+}
+
+
+def correct_label(text):
+    return KNOWN_CORRECTIONS.get(text, text)
+
+
 def clean(text):
-    return re.sub(r'\s+', ' ', text.strip().lstrip("'"))
+    cleaned = re.sub(r'\s+', ' ', text.strip().lstrip("'"))
+    return correct_label(cleaned)
 
 
 def is_top_level_unit(text):

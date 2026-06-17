@@ -32,13 +32,38 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function createOption(value, label) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        option.title = label;
+        return option;
+    }
+
+    function updateSelectTitle(select) {
+        if (!select) {
+            return;
+        }
+        const selectedOption = select.options[select.selectedIndex];
+        select.title = selectedOption ? selectedOption.text : '';
+    }
+
+    function setSelectOptions(select, options, placeholder) {
+        select.innerHTML = '';
+        select.appendChild(createOption('', placeholder));
+        options.forEach(function (option) {
+            select.appendChild(createOption(option.value, option.label));
+        });
+        updateSelectTitle(select);
+    }
+
     function fillSetorOptions() {
         const secretariaIndex = localidadeSecretaria?.selectedIndex - 1;
         const divisaoIndex = localidadeDivisao?.selectedIndex - 1;
 
         if (typeof secretariaIndex !== 'number' || secretariaIndex < 0 || typeof divisaoIndex !== 'number' || divisaoIndex < 0) {
             localidadeSetor.disabled = true;
-            localidadeSetor.innerHTML = '<option value="">Selecione o setor</option>';
+            setSelectOptions(localidadeSetor, [], 'Selecione o setor');
             setHiddenLocalidadePath();
             return;
         }
@@ -49,16 +74,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (setores.length === 0) {
             localidadeSetor.disabled = true;
-            localidadeSetor.innerHTML = '<option value="' + NO_SETOR_VALUE.replace(/"/g, '&quot;') + '">' + NO_SETOR_VALUE + '</option>';
+            localidadeSetor.appendChild(createOption(NO_SETOR_VALUE, NO_SETOR_VALUE));
             localidadeSetor.value = NO_SETOR_VALUE;
             localidadePathInput.value = `${secretariaData.secretaria} > ${divisaoData.name} > ${NO_SETOR_VALUE}`;
             return;
         }
 
         localidadeSetor.disabled = false;
-        localidadeSetor.innerHTML = '<option value="">Selecione o setor</option>' + setores.map(function (setor) {
-            return '<option value="' + setor.replace(/"/g, '&quot;') + '">' + setor + '</option>';
-        }).join('');
+        setSelectOptions(localidadeSetor, setores.map(function (setor) {
+            return { value: setor, label: setor };
+        }), 'Selecione o setor');
         setHiddenLocalidadePath();
     }
 
@@ -67,22 +92,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (typeof secretariaIndex !== 'number' || secretariaIndex < 0) {
             localidadeDivisao.disabled = true;
-            localidadeDivisao.innerHTML = '<option value="">Selecione a divisão</option>';
+            setSelectOptions(localidadeDivisao, [], 'Selecione a divisão');
             localidadeSetor.disabled = true;
-            localidadeSetor.innerHTML = '<option value="">Selecione o setor</option>';
+            setSelectOptions(localidadeSetor, [], 'Selecione o setor');
             setHiddenLocalidadePath();
             return;
         }
 
         const secretariaData = localidadeHierarchy[secretariaIndex];
         const divisaoOptions = (secretariaData?.divisoes || []).map(function (divisao) {
-            return '<option value="' + divisao.name.replace(/"/g, '&quot;') + '">' + divisao.name + '</option>';
+            return { value: divisao.name, label: divisao.name };
         });
 
         localidadeDivisao.disabled = false;
-        localidadeDivisao.innerHTML = '<option value="">Selecione a divisão</option>' + divisaoOptions.join('');
+        setSelectOptions(localidadeDivisao, divisaoOptions, 'Selecione a divisão');
         localidadeSetor.disabled = true;
-        localidadeSetor.innerHTML = '<option value="">Selecione o setor</option>';
+        setSelectOptions(localidadeSetor, [], 'Selecione o setor');
         setHiddenLocalidadePath();
     }
 
@@ -91,9 +116,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        localidadeSecretaria.innerHTML = '<option value="">Selecione a secretaria</option>' + localidadeHierarchy.map(function (secretaria) {
-            return '<option value="' + secretaria.secretaria.replace(/"/g, '&quot;') + '">' + secretaria.secretaria + '</option>';
-        }).join('');
+        const secretariaOptions = localidadeHierarchy.map(function (secretaria) {
+            return { value: secretaria.secretaria, label: secretaria.secretaria };
+        });
+        setSelectOptions(localidadeSecretaria, secretariaOptions, 'Selecione a secretaria');
     }
 
     function updateFormFields() {
@@ -141,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
         populateSecretarias();
         localidadeSecretaria.addEventListener('change', function () {
             fillDivisaoOptions();
+            updateSelectTitle(localidadeSecretaria);
             setHiddenLocalidadePath();
         });
     }
@@ -148,12 +175,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (localidadeDivisao) {
         localidadeDivisao.addEventListener('change', function () {
             fillSetorOptions();
+            updateSelectTitle(localidadeDivisao);
         });
     }
 
     if (localidadeSetor) {
         localidadeSetor.addEventListener('change', function () {
             setHiddenLocalidadePath();
+            updateSelectTitle(localidadeSetor);
         });
     }
 

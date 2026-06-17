@@ -1,1 +1,645 @@
-[{"secretaria": "GABINETE DO PREFEITO DECRETO N.º 9.778/2025", "divisoes": [{"name": "Divisão Administrativa", "setores": []}]}, {"secretaria": "FUNDO SOCIAL DE SOLIDARIEDADE", "divisoes": [{"name": "Divisão Administrativa, Convênios e Captação", "setores": []}, {"name": "Divisão de Projetos e Ações Sociais", "setores": ["Setor de Acolhimento e Atendimento Social"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DA CASA CIVIL DECRETO N.º 9.748/2025", "divisoes": [{"name": "Divisão de Planejamento Estratégico", "setores": ["Setor de Estratégia e Gestão de Prazos", "Setor de Metas e Resultados"]}, {"name": "Divisão de Análise de Dados e Indicadores", "setores": ["Setor de Monitoramento e Avaliação de Indicadores"]}, {"name": "Divisão Conecta+Olímpia", "setores": ["Setor Desenvolvimento", "Setor de Implantação e Melhorias"]}, {"name": "Divisão de Governança, Processos e Projetos Estratégicos", "setores": ["Setor de Escritório de Processos e Projetos", "Setor de Estudos Estratégicos e Boas Práticas da Gestão"]}, {"name": "Divisão de Normas e Atos Oficiais", "setores": ["Setor de Normas e Expediente"]}, {"name": "Divisão de Assuntos Jurídicos", "setores": ["Setor de Execuções Fiscais e Assuntos Tributários", "Setor de Atos Administrativos, Consultoria e Pareceres", "Setor de Acompanhamento de Licitações, Contratos e Convênios", "Setor de Processos Cíveis, Administrativos e Trabalhistas", "Setor Administrativo"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE GOVERNO E RELAÇÕES INSTITUCIONAIS DECRETO N.º 9.967/2026", "divisoes": [{"name": "Divisão de Apoio ao Terceiro Setor e Organizações Comunitária", "setores": []}, {"name": "Divisão de Captação Estratégica", "setores": ["Setor de Relações Federativas e Investimentos"]}, {"name": "Divisão de Parcerias Público- Privadas e Concessões", "setores": ["Setor de Coordenação e Gestão de PPP e Concessões"]}, {"name": "Divisão de Ouvidoria, Análise e Resolução de Demandas", "setores": ["Setor de Atendimento, Encaminhamento e Resolução"]}, {"name": "Divisão de Comunicação, Imprensa, Cerimonial e Evento", "setores": ["Setor de Cerimonial e Solenidades", "Setor de Imprensa e Marketing"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE ASSISTÊNCIA E DESENVOLVIMENTO SOCIAL DECRETO N.º 9.781/2025", "divisoes": [{"name": "Divisão de Proteção Social Básica", "setores": ["Setor de CRAS I", "Setor de CRAS II", "Setor de CRAS III", "Setor de Centro de Convivência do Idoso", "Setor do Programa Criança Feliz"]}, {"name": "Divisão de Proteção Social Especial", "setores": ["Setor de CREAS", "Setor Centro Dia do Idoso", "Setor da Casa de Passagem", "Setor de Acolhimento a Criança e Adolescente", "Setor do Programa Vida Longa"]}, {"name": "Divisão de Interesse Habitacional, Regularização Fundiária e Melhorias Habitacionais", "setores": ["Setor de Planejamento e Programas Habitacionais"]}, {"name": "Divisão de Gestão Administrativa e Financiamento do SUAS", "setores": ["Setor de Compras e Controle de Estoque", "Setor de Prestação de Contas e Controle Orçamentário", "Setor de Gerenciamento, Controle e Concessão de Benefícios Eventuais"]}, {"name": "Divisão de Vigilância Socioassistencial, Cadastro Único e Gestão do Conecta+Olímpia", "setores": ["Setor de Monitoramento e Avaliação", "Setor de Gestão Executiva dos Conselhos"]}, {"name": "Divisão de Captação de Recursos e Fomento ao Terceiro Setor", "setores": ["Setor de Gestão e Fomento do Terceiro Setor"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE ESPORTE, LAZER E JUVENTUDE DECRETO N.º 9.766/2025", "divisoes": [{"name": "Divisão Administrativa", "setores": ["Setor de Apoio Administrativo", "Setor de Projetos e Eventos", "Setor de Manutenção de Prédios e Suprimentos"]}, {"name": "Divisão de Esporte", "setores": ["Setor de Coordenação Esportiva", "Chefe do Setor de Coordenação do Complexo Esportivo"]}, {"name": "Diretor da Divisão de Lazer e Juventude", "setores": ["Setor de Coordenação, Lazer e Juventude"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE TURISMO DECRETO N.º 9.823/2025", "divisoes": [{"name": "Divisão Administrativa, Planejamento, Desenvolvimento e Infraestrutura Turística", "setores": ["Setor Administrativo e Infraestrutura Turística"]}, {"name": "Divisão de Eventos, Parcerias, Desenvolvimento e Suporte aos Atrativos Turísticos", "setores": ["Setor de Eventos", "Setor de Suporte aos Atrativos Turísticos"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE CULTURA E DEFESA DO FOLCLORE DECRETO N.º 9.822/2025", "divisoes": [{"name": "Divisão Administrativa", "setores": ["Setor de Apoio Administrativo e Operacional"]}, {"name": "Divisão de Patrimônio Histórico Cultural", "setores": ["Setor de Preservação do Patrimônio Material e Imaterial e Coordenação dos Equipamentos Culturais"]}, {"name": "Divisão de Festivais e Eventos", "setores": ["Setor de Planejamento do Calendário de Eventos"]}, {"name": "Divisão de Programas e Projetos Culturais", "setores": ["Setor de Fomento e Apoio aos Projetos"]}]}, {"secretaria": "SEC. MUN. INOVAÇÃO, TECNOLOGIA E DESENVOLVIMENTO ECON. SUSTENTÁVEL DECRETO N.º 9.857/2026", "divisoes": [{"name": "Divisão Administrativa", "setores": ["Setor de Apoio Administrativo"]}, {"name": "Divisão de Agricultura, Inspeção de Produtos de Origem Animal e Patrulha Agrícola Mecanizada", "setores": ["Setor de Apoio aos Produtos de Origem Animal (SIMPOA)", "Setor de Patrulha Agrícola Mecanizada", "Setor de Apoio às Feiras"]}, {"name": "Divisão de Inovação Tecnológica, Estudos Econômicos e Pesquisas", "setores": ["Setor de Apoio à Integração das Secretarias, Banco de Dados Integrado (BDI) e Geoprocessamento", "Setor de Inovação Tecnológica"]}, {"name": "Divisão de Desenvolvimento Econômico Sustentável", "setores": ["Setor da Casa do Empreendedor", "Setor de Apoio a Indústria e Parceria com o Sistema “S” Sebrae/Senai/Sesi/Sest/Senat", "Setor de Apoio ao Comércio e Parceria com o Sistema “S” Senac/Sebrae/Sest/Senat/Sesc", "Setor de Estudos, Boletins e Indicadores"]}, {"name": "Divisão de Atendimento e Capacitação ao Cidadão", "setores": ["Setor de Atendimento Poupatempo", "Setor de Coordenação do Procon", "Setor de Capacitação, Formação e Aperfeiçoamento"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE SAÚDE DECRETO N.º 9.844/2025", "divisoes": [{"name": "Divisão Administrativa", "setores": ["Setor de Apoio Administrativo", "Setor de Frotas e Remoção de Pacientes", "Setor de Apoio a Licitação", "Setor de Apoio à Informatização", "Setor de Manutenção de Prédios e Suprimentos", "Setor de Apoio a Elaboração de Documentos Técnicos para Processos Licitatórios"]}, {"name": "Divisão de Planejamento, Avaliação e Desenvolvimento", "setores": ["Setor de Fiscalização de Contratos e Convênios", "Setor de Regulação dos Serviços", "Setor de Núcleo de Informação, Processamento de Dados e Faturamento", "Setor de Ação Judicial", "Setor de Gestão de Contratos e Convênios", "Setor de Auditoria"]}, {"name": "Diretor da Divisão de Educação Permanente e Humanizaçã", "setores": ["Setor de Parcerias com Instituições de Ensino, Estágios e Residência Médica", "Setor de Ouvidoria SUS"]}, {"name": "Divisão de Vigilância em Saúde", "setores": ["Setor de Vigilância Epidemiológic", "Setor de Vigilância Sanitári", "Setor de Controle de Endemias e Animais Peçonhentos"]}, {"name": "Divisão de Média e Alta Complexidade", "setores": ["Setor de Ambulatório de Referência de Especialidades – ARE", "Setor de Diagnóstico Complementar", "Setor de Saúde Mental", "Setor de Reabilitação (EMAD/EMAP) Fisioterapia"]}, {"name": "Diretor da Divisão de Atenção Primári", "setores": ["Setor de Distrito Sanitário I", "Setor de Distrito Sanitário II", "Setor Mãe Olimpiense", "Setor de Saúde Bucal"]}, {"name": "Divisão de Assistência Farmacêutica e Insumos Estratégicos", "setores": ["Setor de Suporte Administrativo Farmacêutico", "Setor de Apoio à Logística"]}, {"name": "Divisão de Unidade de Pronto Atendimento UPA 24h", "setores": ["Setor de Suporte Administrativo UPA/SAMU"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE EDUCAÇÃO DECRETO N.º 9.838/2025", "divisoes": [{"name": "Divisão Administrativa, Controle e Execução Orçamentária", "setores": ["Setor de Protocolo", "Setor de Apoio Administrativo e Monitoramento de Contratos"]}, {"name": "Divisão de Planejamento", "setores": ["Setor de Demanda Escola", "Setor de Transporte Escola", "Setor de Manutenção de Prédios e Suprimentos", "Setor de Alimentação Escolar"]}, {"name": "Divisão de Oficinas Pedagógicas", "setores": ["Setor de Ensino Infant", "Setor de Ensino Fundamenta", "Setor de Educação Especial e Inclusi"]}, {"name": "Divisão de Supervisão Escolar", "setores": ["Setor de Supervisão de Ensino", "Setor de Supervisão de Ensino I", "Setor de Supervisão de Ensino II", "Setor de Supervisão de Ensino IV", "Setor de Supervisão de Ensino V", "Setor de Supervisão de Ensino V"]}, {"name": "Divisão de Implantação Tecnológica e Controle Educacional", "setores": ["Setor de Implementação de Soluções Tecnológicas e Gestão do Conecta+Olímpi", "Setor de Formação e Capacitação Digita"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE PLANEJAMENTO E FINANÇAS DECRETO N.º 9.835/2025", "divisoes": [{"name": "Divisão de Planejamento e Execução Orçamentária", "setores": ["Setor de Planejamento e Orçament", "Setor de Execução Orçamentári", "Setor de Tesourari", "Setor de Custos"]}, {"name": "Divisão de Cadastro e Gestão da Dívida Ativ", "setores": ["Setor de Cadastro Imobiliári", "Setor de Cadastro Mobiliári", "Setor de Patrimônio Imobiliário", "Setor de Dívida Ativa"]}, {"name": "Divisão de Fiscalização Tributári", "setores": ["Setor de Tributo"]}, {"name": "Divisão de Fiscalização de Postura", "setores": ["Setor de Postura"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE GESTÃO E CIDADE INTELIGENTE DECRETO N.º 9.843/2025", "divisoes": [{"name": "Divisão de Gestão de Recursos Humanos", "setores": ["Setor de Folha de Pagamento", "Setor de Treinamento e Desenvolvimento Huma", "Setor de Serviço Especializado em Segurança e Medicina do Trabalh", "Setor de Gestão de Vínculos, Atos e Sistemas de Escrituração Digita"]}, {"name": "Divisão de Gestão e Planejamento de Compras", "setores": ["Setor de Planejamento e Formalização das Contrataçõe", "Setor de Compras", "Setor de Licitações"]}, {"name": "Divisão de Gestão Contratual", "setores": ["Chefe do Setor de Gestão de Contrato", "Chefe do Setor de Fiscalização de Contrato", "Chefe do Setor de Contrato"]}, {"name": "Diretor da Divisão de Gestão Logístic", "setores": ["Chefe do Setor de Almoxarifado e Distribuiçã", "Setor Administrativo"]}, {"name": "Diretor da Divisão de Gestão Operaciona", "setores": ["Setor de Patrimônio Mobiliário", "Chefe do Setor de Controle e Manutenção de Frotas", "Setor de Apoio e Atendimento"]}, {"name": "Divisão de Tecnologia da Informaçã", "setores": ["Setor de Infraestrutura de Rede e Servidore", "Setor de Fábrica de Software e Sistema", "Setor de Suporte e Manutenção", "Setor de Inteligência de Negócios, Integração e Desenvolvimento"]}, {"name": "Divisão de Arquivo Público Municipal", "setores": ["Setor de Acervo Histórico", "Setor de Gestão Documental"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE OBRAS, ENGENHARIA E INFRAESTRUTURA DECRETO N.º 9.966/2026", "divisoes": [{"name": "Divisão Administrativa", "setores": ["Setor de Apoio Administrativo", "Setor de Gestão de Concessão dos Serviços de Água e Esgoto"]}, {"name": "Divisão de Planejamento Urbano", "setores": ["Setor de Planejamento, Desenvolvimento Urbano e Gestão de Contrapartida"]}, {"name": "Divisão de Manutenção", "setores": ["Setor de Manutenção de Vias Urbanas e Rurai", "Setor de Manutenção de Edificações Pública", "Setor de Manutenção de Iluminação Pública"]}, {"name": "Divisão de Projetos e Obras", "setores": ["Setor de Projeto", "Setor de Fiscalização de Obras Públicas", "Setor de Gerenciamento de Contratos de Obras Públicas", "Setor de Drenagem Urban"]}, {"name": "Divisão de Licenciamento e Regularização", "setores": ["Setor de Licenciamento de Obras", "Setor de Fiscalização e Regularização", "Setor de Topografia e Georreferenciamento", "Setor de Regularização Fundiária de Interesse Específico"]}, {"name": "Divisão de Convênios e Operações de Recursos Externos", "setores": ["Setor de Operacionalização de Convênios", "Setor de Prestação de Contas e Monitoramento"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE ZELADORIA E MEIO AMBIENTE DECRETO N.º 9.839/2025", "divisoes": [{"name": "Divisão Administrativa", "setores": ["Setor de Apoio Administrativo"]}, {"name": "Divisão de Serviços de Zeladoria", "setores": ["Setor de Conservação Urbana", "Setor de Conservação de Áreas Verde", "Setor de Arborização e Paisagismo"]}, {"name": "Divisão de Meio Ambiente", "setores": ["Setor de Manutenção, Operação e Instalações Ambientais", "Setor de Fiscalização e Licenciamento", "Setor de Educação Ambiental"]}, {"name": "Divisão de Proteção e Bem-Estar Animal", "setores": ["Setor de Acolhimento e Proteção Animal"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE SEGURANÇA, TRÂNSITO E MOBILIDADE URBANA DECRETO N.º 9.836/2025", "divisoes": [{"name": "Divisão Administrativa", "setores": []}, {"name": "Divisão de Trânsito e Mobilidade Urbana", "setores": ["Setor de Sinalização Viária", "Setor de Transporte Público e Privado", "Setor de Infração, Controle e Fiscalização da Área Azul"]}, {"name": "Divisão de Coordenação da Defesa Civil", "setores": []}, {"name": "Divisão Administrativa da Controladoria Geral do Município", "setores": ["Setor de Apoio ao Sistema de Controle Interno"]}, {"name": "Divisão de Controle Interno e Transparência", "setores": ["Chefe do Setor de Auditoria Interna e Análise de Conta", "Chefe do Setor de Auditoria das Parcerias com o Terceiro Seto"]}]}, {"secretaria": "SECRETARIA MUNICIPAL DE PLANEJAMENTO E FINANÇAS DECRETO N.º 9.835/2025", "divisoes": [{"name": "Divisão de Planejamento e Execução Orçamentária", "setores": ["Setor de Planejamento e Orçamento", "Setor de Execução Orçamentária", "Setor de Tesouraria", "Setor de Custos"]}, {"name": "Divisão de Cadastro e Gestão da Dívida Ativa", "setores": ["Setor de Cadastro Imobiliário", "Setor de Cadastro Mobiliário", "Setor de Patrimônio Imobiliário", "Setor de Dívida Ativa"]}, {"name": "Divisão de Fiscalização Tributária", "setores": ["Setor de Tributos"]}, {"name": "Divisão de Fiscalização de Posturas", "setores": ["Setor de Posturas"]}]}]
+[
+  {
+    "secretaria": "GABINETE DO PREFEITO DECRETO N.º 9.778/2025",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa",
+        "setores": []
+      }
+    ]
+  },
+  {
+    "secretaria": "FUNDO SOCIAL DE SOLIDARIEDADE",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa, Convênios e Captação",
+        "setores": []
+      },
+      {
+        "name": "Divisão de Projetos e Ações Sociais",
+        "setores": [
+          "Setor de Acolhimento e Atendimento Social"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DA CASA CIVIL DECRETO N.º 9.748/2025",
+    "divisoes": [
+      {
+        "name": "Divisão de Planejamento Estratégico",
+        "setores": [
+          "Setor de Estratégia e Gestão de Prazos",
+          "Setor de Metas e Resultados"
+        ]
+      },
+      {
+        "name": "Divisão de Análise de Dados e Indicadores",
+        "setores": [
+          "Setor de Monitoramento e Avaliação de Indicadores"
+        ]
+      },
+      {
+        "name": "Divisão Conecta+Olímpia",
+        "setores": [
+          "Setor de Desenvolvimento",
+          "Setor de Implantação e Melhorias"
+        ]
+      },
+      {
+        "name": "Divisão de Governança, Processos e Projetos Estratégicos",
+        "setores": [
+          "Setor de Escritório de Processos e Projetos",
+          "Setor de Estudos Estratégicos e Boas Práticas da Gestão"
+        ]
+      },
+      {
+        "name": "Divisão de Normas e Atos Oficiais",
+        "setores": [
+          "Setor de Normas e Expediente"
+        ]
+      },
+      {
+        "name": "Divisão de Assuntos Jurídicos",
+        "setores": [
+          "Setor de Execuções Fiscais e Assuntos Tributários",
+          "Setor de Atos Administrativos, Consultoria e Pareceres",
+          "Setor de Acompanhamento de Licitações, Contratos e Convênios",
+          "Setor de Processos Cíveis, Administrativos e Trabalhistas",
+          "Setor Administrativo"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE GOVERNO E RELAÇÕES INSTITUCIONAIS DECRETO N.º 9.967/2026",
+    "divisoes": [
+      {
+        "name": "Divisão de Apoio ao Terceiro Setor e Organizações Comunitária",
+        "setores": []
+      },
+      {
+        "name": "Divisão de Captação Estratégica",
+        "setores": [
+          "Setor de Relações Federativas e Investimentos"
+        ]
+      },
+      {
+        "name": "Divisão de Parcerias Público- Privadas e Concessões",
+        "setores": [
+          "Setor de Coordenação e Gestão de PPP e Concessões"
+        ]
+      },
+      {
+        "name": "Divisão de Ouvidoria, Análise e Resolução de Demandas",
+        "setores": [
+          "Setor de Atendimento, Encaminhamento e Resolução"
+        ]
+      },
+      {
+        "name": "Divisão de Comunicação, Imprensa, Cerimonial e Evento",
+        "setores": [
+          "Setor de Cerimonial e Solenidades",
+          "Setor de Imprensa e Marketing"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE ASSISTÊNCIA E DESENVOLVIMENTO SOCIAL DECRETO N.º 9.781/2025",
+    "divisoes": [
+      {
+        "name": "Divisão de Proteção Social Básica",
+        "setores": [
+          "Setor de CRAS I",
+          "Setor de CRAS II",
+          "Setor de CRAS III",
+          "Setor de Centro de Convivência do Idoso",
+          "Setor do Programa Criança Feliz"
+        ]
+      },
+      {
+        "name": "Divisão de Proteção Social Especial",
+        "setores": [
+          "Setor de CREAS",
+          "Setor Centro Dia do Idoso",
+          "Setor da Casa de Passagem",
+          "Setor de Acolhimento a Criança e Adolescente",
+          "Setor do Programa Vida Longa"
+        ]
+      },
+      {
+        "name": "Divisão de Interesse Habitacional, Regularização Fundiária e Melhorias Habitacionais",
+        "setores": [
+          "Setor de Planejamento e Programas Habitacionais"
+        ]
+      },
+      {
+        "name": "Divisão de Gestão Administrativa e Financiamento do SUAS",
+        "setores": [
+          "Setor de Compras e Controle de Estoque",
+          "Setor de Prestação de Contas e Controle Orçamentário",
+          "Setor de Gerenciamento, Controle e Concessão de Benefícios Eventuais"
+        ]
+      },
+      {
+        "name": "Divisão de Vigilância Socioassistencial, Cadastro Único e Gestão do Conecta+Olímpia",
+        "setores": [
+          "Setor de Monitoramento e Avaliação",
+          "Setor de Gestão Executiva dos Conselhos"
+        ]
+      },
+      {
+        "name": "Divisão de Captação de Recursos e Fomento ao Terceiro Setor",
+        "setores": [
+          "Setor de Gestão e Fomento do Terceiro Setor"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE ESPORTE, LAZER E JUVENTUDE DECRETO N.º 9.766/2025",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa",
+        "setores": [
+          "Setor de Apoio Administrativo",
+          "Setor de Projetos e Eventos",
+          "Setor de Manutenção de Prédios e Suprimentos"
+        ]
+      },
+      {
+        "name": "Divisão de Esporte",
+        "setores": [
+          "Setor de Coordenação Esportiva",
+          "Chefe do Setor de Coordenação do Complexo Esportivo"
+        ]
+      },
+      {
+        "name": "Diretor da Divisão de Lazer e Juventude",
+        "setores": [
+          "Setor de Coordenação, Lazer e Juventude"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE TURISMO DECRETO N.º 9.823/2025",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa, Planejamento, Desenvolvimento e Infraestrutura Turística",
+        "setores": [
+          "Setor Administrativo e Infraestrutura Turística"
+        ]
+      },
+      {
+        "name": "Divisão de Eventos, Parcerias, Desenvolvimento e Suporte aos Atrativos Turísticos",
+        "setores": [
+          "Setor de Eventos",
+          "Setor de Suporte aos Atrativos Turísticos"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE CULTURA E DEFESA DO FOLCLORE DECRETO N.º 9.822/2025",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa",
+        "setores": [
+          "Setor de Apoio Administrativo e Operacional"
+        ]
+      },
+      {
+        "name": "Divisão de Patrimônio Histórico Cultural",
+        "setores": [
+          "Setor de Preservação do Patrimônio Material e Imaterial e Coordenação dos Equipamentos Culturais"
+        ]
+      },
+      {
+        "name": "Divisão de Festivais e Eventos",
+        "setores": [
+          "Setor de Planejamento do Calendário de Eventos"
+        ]
+      },
+      {
+        "name": "Divisão de Programas e Projetos Culturais",
+        "setores": [
+          "Setor de Fomento e Apoio aos Projetos"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SEC. MUN. INOVAÇÃO, TECNOLOGIA E DESENVOLVIMENTO ECON. SUSTENTÁVEL DECRETO N.º 9.857/2026",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa",
+        "setores": [
+          "Setor de Apoio Administrativo"
+        ]
+      },
+      {
+        "name": "Divisão de Agricultura, Inspeção de Produtos de Origem Animal e Patrulha Agrícola Mecanizada",
+        "setores": [
+          "Setor de Apoio aos Produtos de Origem Animal (SIMPOA)",
+          "Setor de Patrulha Agrícola Mecanizada",
+          "Setor de Apoio às Feiras"
+        ]
+      },
+      {
+        "name": "Divisão de Inovação Tecnológica, Estudos Econômicos e Pesquisas",
+        "setores": [
+          "Setor de Apoio à Integração das Secretarias, Banco de Dados Integrado (BDI) e Geoprocessamento",
+          "Setor de Inovação Tecnológica"
+        ]
+      },
+      {
+        "name": "Divisão de Desenvolvimento Econômico Sustentável",
+        "setores": [
+          "Setor da Casa do Empreendedor",
+          "Setor de Apoio a Indústria e Parceria com o Sistema “S” Sebrae/Senai/Sesi/Sest/Senat",
+          "Setor de Apoio ao Comércio e Parceria com o Sistema “S” Senac/Sebrae/Sest/Senat/Sesc",
+          "Setor de Estudos, Boletins e Indicadores"
+        ]
+      },
+      {
+        "name": "Divisão de Atendimento e Capacitação ao Cidadão",
+        "setores": [
+          "Setor de Atendimento Poupatempo",
+          "Setor de Coordenação do Procon",
+          "Setor de Capacitação, Formação e Aperfeiçoamento"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE SAÚDE DECRETO N.º 9.844/2025",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa",
+        "setores": [
+          "Setor de Apoio Administrativo",
+          "Setor de Frotas e Remoção de Pacientes",
+          "Setor de Apoio a Licitação",
+          "Setor de Apoio à Informatização",
+          "Setor de Manutenção de Prédios e Suprimentos",
+          "Setor de Apoio a Elaboração de Documentos Técnicos para Processos Licitatórios"
+        ]
+      },
+      {
+        "name": "Divisão de Planejamento, Avaliação e Desenvolvimento",
+        "setores": [
+          "Setor de Fiscalização de Contratos e Convênios",
+          "Setor de Regulação dos Serviços",
+          "Setor de Núcleo de Informação, Processamento de Dados e Faturamento",
+          "Setor de Ação Judicial",
+          "Setor de Gestão de Contratos e Convênios",
+          "Setor de Auditoria"
+        ]
+      },
+      {
+        "name": "Diretor da Divisão de Educação Permanente e Humanização",
+        "setores": [
+          "Setor de Parcerias com Instituições de Ensino, Estágios e Residência Médica",
+          "Setor de Ouvidoria SUS"
+        ]
+      },
+      {
+        "name": "Divisão de Vigilância em Saúde",
+        "setores": [
+          "Setor de Vigilância Epidemiológica",
+          "Setor de Vigilância Sanitária",
+          "Setor de Controle de Endemias e Animais Peçonhentos"
+        ]
+      },
+      {
+        "name": "Divisão de Média e Alta Complexidade",
+        "setores": [
+          "Setor de Ambulatório de Referência de Especialidades – ARE",
+          "Setor de Diagnóstico Complementar",
+          "Setor de Saúde Mental",
+          "Setor de Reabilitação (EMAD/EMAP) Fisioterapia"
+        ]
+      },
+      {
+        "name": "Diretor da Divisão de Atenção Primária",
+        "setores": [
+          "Setor de Distrito Sanitário I",
+          "Setor de Distrito Sanitário II",
+          "Setor Mãe Olimpiense",
+          "Setor de Saúde Bucal"
+        ]
+      },
+      {
+        "name": "Divisão de Assistência Farmacêutica e Insumos Estratégicos",
+        "setores": [
+          "Setor de Suporte Administrativo Farmacêutico",
+          "Setor de Apoio à Logística"
+        ]
+      },
+      {
+        "name": "Divisão de Unidade de Pronto Atendimento UPA 24h",
+        "setores": [
+          "Setor de Suporte Administrativo UPA/SAMU"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE EDUCAÇÃO DECRETO N.º 9.838/2025",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa, Controle e Execução Orçamentária",
+        "setores": [
+          "Setor de Protocolo",
+          "Setor de Apoio Administrativo e Monitoramento de Contratos"
+        ]
+      },
+      {
+        "name": "Divisão de Planejamento",
+        "setores": [
+          "Setor de Demanda Escola",
+          "Setor de Transporte Escola",
+          "Setor de Manutenção de Prédios e Suprimentos",
+          "Setor de Alimentação Escolar"
+        ]
+      },
+      {
+        "name": "Divisão de Oficinas Pedagógicas",
+        "setores": [
+          "Setor de Ensino Infant",
+          "Setor de Ensino Fundamenta",
+          "Setor de Educação Especial e Inclusi"
+        ]
+      },
+      {
+        "name": "Divisão de Supervisão Escolar",
+        "setores": [
+          "Setor de Supervisão de Ensino",
+          "Setor de Supervisão de Ensino I",
+          "Setor de Supervisão de Ensino II",
+          "Setor de Supervisão de Ensino IV",
+          "Setor de Supervisão de Ensino V",
+          "Setor de Supervisão de Ensino V"
+        ]
+      },
+      {
+        "name": "Divisão de Implantação Tecnológica e Controle Educacional",
+        "setores": [
+          "Setor de Implementação de Soluções Tecnológicas e Gestão do Conecta+Olímpi",
+          "Setor de Formação e Capacitação Digital"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE PLANEJAMENTO E FINANÇAS DECRETO N.º 9.835/2025",
+    "divisoes": [
+      {
+        "name": "Divisão de Planejamento e Execução Orçamentária",
+        "setores": [
+          "Setor de Planejamento e Orçamento",
+          "Setor de Execução Orçamentária",
+          "Setor de Tesouraria",
+          "Setor de Custos"
+        ]
+      },
+      {
+        "name": "Divisão de Cadastro e Gestão da Dívida Ativa",
+        "setores": [
+          "Setor de Cadastro Imobiliário",
+          "Setor de Cadastro Mobiliário",
+          "Setor de Patrimônio Imobiliário",
+          "Setor de Dívida Ativa"
+        ]
+      },
+      {
+        "name": "Divisão de Fiscalização Tributária",
+        "setores": [
+          "Setor de Tributo"
+        ]
+      },
+      {
+        "name": "Divisão de Fiscalização de Postura",
+        "setores": [
+          "Setor de Postura"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE GESTÃO E CIDADE INTELIGENTE DECRETO N.º 9.843/2025",
+    "divisoes": [
+      {
+        "name": "Divisão de Gestão de Recursos Humanos",
+        "setores": [
+          "Setor de Folha de Pagamento",
+          "Setor de Treinamento e Desenvolvimento Huma",
+          "Setor de Serviço Especializado em Segurança e Medicina do Trabalh",
+          "Setor de Gestão de Vínculos, Atos e Sistemas de Escrituração Digital"
+        ]
+      },
+      {
+        "name": "Divisão de Gestão e Planejamento de Compras",
+        "setores": [
+          "Setor de Planejamento e Formalização das Contratações",
+          "Setor de Compras",
+          "Setor de Licitações"
+        ]
+      },
+      {
+        "name": "Divisão de Gestão Contratual",
+        "setores": [
+          "Chefe do Setor de Gestão de Contrato",
+          "Chefe do Setor de Fiscalização de Contrato",
+          "Chefe do Setor de Contrato"
+        ]
+      },
+      {
+        "name": "Diretor da Divisão de Gestão Logística",
+        "setores": [
+          "Chefe do Setor de Almoxarifado e Distribuição",
+          "Setor Administrativo"
+        ]
+      },
+      {
+        "name": "Diretor da Divisão de Gestão Operacional",
+        "setores": [
+          "Setor de Patrimônio Mobiliário",
+          "Chefe do Setor de Controle e Manutenção de Frotas",
+          "Setor de Apoio e Atendimento"
+        ]
+      },
+      {
+        "name": "Divisão de Tecnologia da Informação",
+        "setores": [
+          "Setor de Infraestrutura de Rede e Servidores",
+          "Setor de Fábrica de Software e Sistema",
+          "Setor de Suporte e Manutenção",
+          "Setor de Inteligência de Negócios, Integração e Desenvolvimento"
+        ]
+      },
+      {
+        "name": "Divisão de Arquivo Público Municipal",
+        "setores": [
+          "Setor de Acervo Histórico",
+          "Setor de Gestão Documental"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE OBRAS, ENGENHARIA E INFRAESTRUTURA DECRETO N.º 9.966/2026",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa",
+        "setores": [
+          "Setor de Apoio Administrativo",
+          "Setor de Gestão de Concessão dos Serviços de Água e Esgoto"
+        ]
+      },
+      {
+        "name": "Divisão de Planejamento Urbano",
+        "setores": [
+          "Setor de Planejamento, Desenvolvimento Urbano e Gestão de Contrapartida"
+        ]
+      },
+      {
+        "name": "Divisão de Manutenção",
+        "setores": [
+          "Setor de Manutenção de Vias Urbanas e Rurai",
+          "Setor de Manutenção de Edificações Pública",
+          "Setor de Manutenção de Iluminação Pública"
+        ]
+      },
+      {
+        "name": "Divisão de Projetos e Obras",
+        "setores": [
+          "Setor de Projeto",
+          "Setor de Fiscalização de Obras Públicas",
+          "Setor de Gerenciamento de Contratos de Obras Públicas",
+          "Setor de Drenagem Urban"
+        ]
+      },
+      {
+        "name": "Divisão de Licenciamento e Regularização",
+        "setores": [
+          "Setor de Licenciamento de Obras",
+          "Setor de Fiscalização e Regularização",
+          "Setor de Topografia e Georreferenciamento",
+          "Setor de Regularização Fundiária de Interesse Específico"
+        ]
+      },
+      {
+        "name": "Divisão de Convênios e Operações de Recursos Externos",
+        "setores": [
+          "Setor de Operacionalização de Convênios",
+          "Setor de Prestação de Contas e Monitoramento"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE ZELADORIA E MEIO AMBIENTE DECRETO N.º 9.839/2025",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa",
+        "setores": [
+          "Setor de Apoio Administrativo"
+        ]
+      },
+      {
+        "name": "Divisão de Serviços de Zeladoria",
+        "setores": [
+          "Setor de Conservação Urbana",
+          "Setor de Conservação de Áreas Verde",
+          "Setor de Arborização e Paisagismo"
+        ]
+      },
+      {
+        "name": "Divisão de Meio Ambiente",
+        "setores": [
+          "Setor de Manutenção, Operação e Instalações Ambientais",
+          "Setor de Fiscalização e Licenciamento",
+          "Setor de Educação Ambiental"
+        ]
+      },
+      {
+        "name": "Divisão de Proteção e Bem-Estar Animal",
+        "setores": [
+          "Setor de Acolhimento e Proteção Animal"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE SEGURANÇA, TRÂNSITO E MOBILIDADE URBANA DECRETO N.º 9.836/2025",
+    "divisoes": [
+      {
+        "name": "Divisão Administrativa",
+        "setores": []
+      },
+      {
+        "name": "Divisão de Trânsito e Mobilidade Urbana",
+        "setores": [
+          "Setor de Sinalização Viária",
+          "Setor de Transporte Público e Privado",
+          "Setor de Infração, Controle e Fiscalização da Área Azul"
+        ]
+      },
+      {
+        "name": "Divisão de Coordenação da Defesa Civil",
+        "setores": []
+      },
+      {
+        "name": "Divisão Administrativa da Controladoria Geral do Município",
+        "setores": [
+          "Setor de Apoio ao Sistema de Controle Interno"
+        ]
+      },
+      {
+        "name": "Divisão de Controle Interno e Transparência",
+        "setores": [
+          "Chefe do Setor de Auditoria Interna e Análise de Conta",
+          "Chefe do Setor de Auditoria das Parcerias com o Terceiro Seto"
+        ]
+      }
+    ]
+  },
+  {
+    "secretaria": "SECRETARIA MUNICIPAL DE PLANEJAMENTO E FINANÇAS DECRETO N.º 9.835/2025",
+    "divisoes": [
+      {
+        "name": "Divisão de Planejamento e Execução Orçamentária",
+        "setores": [
+          "Setor de Planejamento e Orçamento",
+          "Setor de Execução Orçamentária",
+          "Setor de Tesouraria",
+          "Setor de Custos"
+        ]
+      },
+      {
+        "name": "Divisão de Cadastro e Gestão da Dívida Ativa",
+        "setores": [
+          "Setor de Cadastro Imobiliário",
+          "Setor de Cadastro Mobiliário",
+          "Setor de Patrimônio Imobiliário",
+          "Setor de Dívida Ativa"
+        ]
+      },
+      {
+        "name": "Divisão de Fiscalização Tributária",
+        "setores": [
+          "Setor de Tributos"
+        ]
+      },
+      {
+        "name": "Divisão de Fiscalização de Posturas",
+        "setores": [
+          "Setor de Posturas"
+        ]
+      }
+    ]
+  }
+]

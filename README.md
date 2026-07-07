@@ -2,113 +2,119 @@
 
 ## O que é este projeto
 
-Este projeto é um sistema simples de controle de estoque construído em PHP com MySQL e Docker. Ele permite:
+Este projeto é um sistema de controle de estoque em PHP com MySQL e Docker, pensado para ambientes administrativos que precisam registrar itens, entradas, saídas, assinaturas e relatórios de estoque com persistência de dados.
 
-- cadastrar itens
-- registrar movimentações de estoque (entrada e saída)
-- controlar uso por consumo ou empréstimo
-- associar movimentações a funcionários e localidades
-- armazenar assinaturas digitais como prova de registro
-- gerar relatório de saldo por item
+## O que o sistema resolve
 
-## Dor que o projeto resolve
+Ele resolve a falta de um controle centralizado de estoque, substituindo processos manuais e planilhas por:
 
-A dor atendida por este sistema é a falta de controle centralizado de estoque em um ambiente administrativo com:
-
-- itens registrados manualmente
-- entradas e saídas documentadas
-- assinaturas de quem movimentou o item
-- localidades organizadas em secretaria > divisão > setor
-
-Ele foi pensado para substituir planilhas e registros manuais, fornecendo uma interface única para registrar e consultar estoques com validação básica.
+- cadastro de itens
+- controle de entradas e saídas
+- rastreamento de uso por consumo e empréstimo
+- registro de responsável e localidade
+- armazenamento de assinaturas digitais
+- relatórios paginados e filtros por período
+- alertas por e-mail de estoque baixo
 
 ## Para quem é este projeto
 
-- equipes de compras ou almoxarifado que precisam registrar entradas e saídas de materiais
-- gestores que precisam de histórico de movimentações
-- operações que exigem assinatura e vínculo de movimentação com funcionários e locais
+- equipes de almoxarifado ou compras
+- gestores que precisam auditar movimentações
+- operações que exigem assinatura física/documentada
+- ambientes que precisam de histórico de movimentação e notificações
 
-## O que o sistema faz
+## Funcionalidades implementadas
 
-1. Cadastro de itens
-   - o usuário informa o nome do item
-   - pode definir quantidade inicial na criação
-   - se o item já existir, o sistema atualiza o saldo em vez de criar item duplicado
+### Cadastro e gestão de itens
+- cadastro de itens por nome
+- quantidade inicial opcional no registro do item
+- regra de item único por nome, evitando duplicação
+- limites de estoque por item:
+  - `quantidade_minima`
+  - `quantidade_desejavel`
 
-2. Registro de movimentações
-   - tipo: `entrada` ou `saída`
-   - uso: `Consumo` ou `Empréstimo`
-   - data do movimento
-   - item e quantidade
-   - funcionário responsável (para empréstimo)
-   - localidade (secretaria > divisão > setor)
-   - observação opcional
-   - assinatura digital em canvas
+### Movimentações
+- tipos de movimentação:
+  - `entrada`
+  - `saída`
+- usos:
+  - `Consumo`
+  - `Empréstimo`
+- registro de data, quantidade, observação, funcionário e localidade
+- assinatura digital em canvas para cada movimentação
 
-3. Histórico
-   - lista de movimentações registradas
-   - visualização de assinatura como miniatura clicável
+### Itens temporários vs permanentes
+- suporte a `tipo_registro`:
+  - `0` → `Saldo de transição` (temporário)
+  - `1` → `Carga permanente`
+- itens temporários:
+  - aparecem na tela de `Histórico`
+  - compõem o saldo atual em exibição
+  - não aparecem no `Relatório de Movimentações`
+  - não entram no `Relatório de Consumo Mensal`
+  - não influenciam a `Estimativa de Esgotamento`
+- itens permanentes:
+  - são considerados para relatórios e estimativas
+  - compõem o histórico de consumo oficial
 
-4. Relatório de estoque
-   - mostra saldo inicial, retiradas e saldo final por item
+### Histórico
+- lista completa de todas as movimentações
+- exibe assinaturas em miniatura clicável
+- aceita filtros de período:
+  - `Data inicial`
+  - `Data final`
+- mantém paginação para grandes volumes de registros
 
-5. Gestão de limites e alertas
-   - definir quantidade mínima e desejável para cada item
-   - registrar e-mails de destino para receber notificações de estoque baixo
-   - alertar automaticamente quando o estoque atingir ou ficar abaixo do mínimo
-   - estimar em quantos dias o item chegará ao mínimo com base no consumo histórico
-   - indicar quantidade recomendada para compra visando manter o estoque acima do mínimo ou desejável
+### Relatórios
+- `Relatório de Movimentações`
+  - mostra apenas movimentações permanentes (`tipo_registro = 1`)
+  - exclui registros temporários de carga inicial
+  - mantém paginação configurável
+- `Relatório de Consumo Mensal`
+  - considera apenas saídas com `uso = "Consumo"` e `tipo_registro = 1`
+  - filtra por ano e mês
+  - possui paginação
+- `Relatório de Estoque e Estimativa`
+  - mostra saldo atual por item
+  - inclui estimativa de esgotamento
+  - usa apenas movimentações permanentes para cálculo
 
-## Novas funcionalidades implementadas
-- Os itens agora armazenam `quantidade_minima` e `quantidade_desejavel`.
-- Há nova tabela `item_notificacao_email` para guardar destinatários de alerta por item.
-- A página de itens permite configurar limites e adicionar emails de notificação.
-- O relatório agora também mostra consumo mensal por item e mês.
-- O relatório de movimentações mantém cada movimento separado, incluindo a data de registro, para evitar somatórios automáticos de entradas repetidas do mesmo item.
-- O painel de relatórios agora apresenta botões de seleção para Relatório de Movimentações, Relatório de Consumo Mensal e Relatório de Estoque e Estimativa.
-- Todos os relatórios permitem escolher quantos registros aparecem por página para não sobrecarregar a visualização.
-- O cálculo de estimativa de esgotamento considera:
-  - estoque atual;
-  - quantidade mínima configurada;
-  - consumo total de saída com `uso = "Consumo"` desde o primeiro movimento de consumo do item;
-  - dias úteis (segunda a sexta-feira) entre a data do primeiro consumo e a data atual.
-- Para evitar divisão por zero, se a janela de dias úteis for menor ou igual a 0, o sistema usa 1 dia.
-- O cálculo é feito como `dailyAverage = total_consumption / windowDays` e `estimativa = (stock - minimum) / dailyAverage`.
-- O sistema envia alertas por e-mail quando um item fica abaixo do mínimo.
+### Notificações e alertas
+- registro de emails de alerta por item
+- alerta automático quando estoque chega ao mínimo ou abaixo dele
+- envio de e-mail via PHP `mail()`, compatível com ambiente MailHog em desenvolvimento
 
-## Como usar as notificações de estoque
-1. Cadastre ou selecione um item em `Itens`.
-2. Preencha `Quantidade Mínima` e `Quantidade Desejável`.
-3. Adicione pelo menos um endereço de e-mail válido em `Email de alerta`.
-4. Registre movimentações de saída com `Uso = Consumo`.
-5. Quando o saldo atingir ou ficar abaixo do mínimo, o sistema tentará enviar um e-mail.
+### Estimativa de esgotamento
+- cálculo baseado em dias úteis
+- usa somente consumo efetivo de saída (`tipo = "saída"`, `uso = "Consumo"`, `tipo_registro = 1`)
+- usa a data do primeiro consumo registrado e a janela de dias úteis até hoje
+- fórmula:
+  - `dailyAverage = total_consumption / windowDays`
+  - `estimativa = (stock - minimum) / dailyAverage`
+- protege contra divisão por zero usando `1` dia quando `windowDays <= 0`
 
-> Observação: o envio de e-mail utiliza a função PHP `mail()` e requer um servidor de e-mail configurado no ambiente.
+### Persistência
+- banco MySQL com dados persistidos em `./db_data`
+- MailHog configurado para persistência em disco em `./mailhog_data`
+- a configuração evita perda de logs de email ao recriar containers
 
-## Persistência de dados e regra de não perda
-- O projeto mantém persistência para o banco de dados MySQL no diretório `./db_data`.
-- Para o serviço de e-mail de desenvolvimento, o MailHog agora também grava os e-mails em disco no diretório `./mailhog_data`.
-- Essa configuração foi adicionada ao `docker-compose.yml` usando `-storage maildir` e `-maildir-path /mailhog`.
-- Com essa regra, mesmo que o container do MailHog seja recriado, o histórico de e-mails enviados permanece disponível.
-- Regra de projeto: `dados não podem ser perdidos` — todas as mensagens de alerta e dados de persistência devem ser armazenados em volumes duráveis.
+## Arquitetura e arquivos principais
 
-## Estrutura do projeto
-
-- `docker-compose.yml` - define contêineres PHP e MySQL
-- `Dockerfile` - imagem PHP com `pdo_mysql`
-- `db/init.sql` - script inicial do banco
-- `app/Database.php` - conexão com MySQL e criação automática de esquema
-- `app/InventoryApp.php` - regras e fluxos de negócio
-- `app/ItemModel.php` - CRUD de itens e saldo
-- `app/FuncionarioModel.php` - funcionários disponíveis para movimentações
-- `app/LocalidadeModel.php` - localidades hierárquicas
-- `app/MovementModel.php` - grava entradas e saídas
-- `app/SpreadsheetLocationLoader.php` - carrega hierarquia de localidades de JSON ou XLSX
-- `public/index.php` - interface web principal
-- `public/style.css` - estilo visual
-- `public/form.js` - comportamento do formulário de movimentação
-- `data/localidade_hierarchy.json` - árvore de localidades usada pela UI
-- `openspec/` - pasta de documentação e especificações do projeto
+- `docker-compose.yml` — containers PHP, MySQL e MailHog
+- `Dockerfile` — imagem PHP com extensão `pdo_mysql`
+- `db/init.sql` — esquema inicial do banco
+- `app/Database.php` — conexão e migrações de esquema
+- `app/InventoryApp.php` — regras de negócio e coordenador de fluxos
+- `app/ItemModel.php` — CRUD de itens e cálculo de saldo
+- `app/MovementModel.php` — grava movimentações e gera relatórios
+- `app/FuncionarioModel.php` — CRUD de funcionários
+- `app/LocalidadeModel.php` — CRUD e hierarquia de localidades
+- `app/SpreadsheetLocationLoader.php` — carga de hierarquia de localidades
+- `public/index.php` — interface web principal
+- `public/style.css` — estilo visual
+- `public/form.js` — comportamento de formulário de movimentação
+- `data/localidade_hierarchy.json` — hierarquia de localidades para UI
+- `openspec/` — documentação e especificações do projeto
 
 ## Banco de dados
 
@@ -156,17 +162,15 @@ Configure os valores de conexão do banco:
 
 ## Documentação adicional
 
-- `openspec/` - local reservado para especificações e documentação extra do projeto
-- `data/localidade_hierarchy.json` - define a estrutura de secretarias, divisões e setores
-- `ORGANOGRAMA DAS SECRETARIAS CHEFES E DIRETORES - ATUALIZADO 2026-04-20.xlsx` - fonte de dados de localidade
+- `openspec/` — local reservado para especificações e documentação extra do projeto
+- `data/localidade_hierarchy.json` — define a estrutura de secretarias, divisões e setores
+- `ORGANOGRAMA DAS SECRETARIAS CHEFES E DIRETORES - ATUALIZADO 2026-04-20.xlsx` — fonte de dados de localidade
 
 ## Futuras melhorias
 
 Este projeto pode ser expandido com as seguintes funcionalidades de nível 2:
 
-- relatórios de consumo mensal para cada item
-- registro de quantidade mínima e quantidade desejável por item
-- envio de alerta por e-mail quando um item atingir ou ficar abaixo da quantidade mínima
-- cadastro de destinatários de e-mail para receber notificações
-- estimativa de quando cada item deve atingir a quantidade mínima com base no consumo histórico
-- sugestão de quantidade a comprar para manter os estoques acima da quantidade mínima ou desejável
+- novas integrações com sistemas de compras
+- dashboard de tendência de consumo
+- relatórios de previsão de compra por categoria
+- exportação de histórico em CSV/PDF

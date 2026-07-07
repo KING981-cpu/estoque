@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tipoField = document.querySelector('select[name="tipo"]');
     const usoField = document.getElementById('uso');
     const funcionarioBlock = document.getElementById('field-funcionario');
+    const itemConditionBlock = document.getElementById('field-item-condition');
     const localidadeBlock = document.getElementById('field-localidade');
     const observacaoBlock = document.getElementById('field-observacao');
 
@@ -126,10 +127,22 @@ document.addEventListener('DOMContentLoaded', function () {
         const tipoValue = normalizeText(tipoField?.value);
         const usoValue = normalizeText(usoField?.value);
         const isEmprestimo = tipoValue === 'saida' && usoValue === 'emprestimo';
+        const showItemCondition = usoValue === 'emprestimo';
 
         if (funcionarioBlock) {
             funcionarioBlock.classList.toggle('hidden', !isEmprestimo);
             funcionarioBlock.style.display = isEmprestimo ? 'block' : 'none';
+        }
+        if (itemConditionBlock) {
+            itemConditionBlock.classList.toggle('hidden', !showItemCondition);
+            itemConditionBlock.style.display = showItemCondition ? 'block' : 'none';
+            const conditionSelect = itemConditionBlock.querySelector('select[name="condicao_item"]');
+            if (conditionSelect) {
+                conditionSelect.required = showItemCondition;
+                if (!showItemCondition) {
+                    conditionSelect.value = '';
+                }
+            }
         }
         if (localidadeBlock) {
             localidadeBlock.classList.toggle('hidden', !isEmprestimo);
@@ -203,7 +216,198 @@ document.addEventListener('DOMContentLoaded', function () {
     const assinaturaInput = document.getElementById('assinatura_data');
     const clearButton = document.getElementById('signature-clear');
     const movementForm = document.querySelector('.movement-form');
+    const saveButton = document.querySelector('.btn-salvar');
+    const undoSubmitWrapper = document.getElementById('submit-undo-wrapper');
+    const undoButton = document.getElementById('undo-button');
+    const undoTimerSpan = document.getElementById('undo-timer');
+    const saldoDisponivelText = document.getElementById('saldo-disponivel');
+    const comprimentoFieldWrapper = document.getElementById('field-comprimento');
+    const quantidadeErro = document.getElementById('quantidade-erro');
+    const UNDO_COUNTDOWN_SECONDS = 5;
     let signaturePad = null;
+    let undoTimeout = null;
+    let undoInterval = null;
+
+    function resetUndoInterface() {
+        if (saveButton) {
+            saveButton.style.display = 'block';
+        }
+        if (undoSubmitWrapper) {
+            undoSubmitWrapper.style.display = 'none';
+        }
+        if (undoTimerSpan) {
+            undoTimerSpan.textContent = String(UNDO_COUNTDOWN_SECONDS);
+        }
+        if (quantidadeErro) {
+            quantidadeErro.style.display = 'none';
+        }
+        if (undoTimeout) {
+            clearTimeout(undoTimeout);
+            undoTimeout = null;
+        }
+        if (undoInterval) {
+            clearInterval(undoInterval);
+            undoInterval = null;
+        }
+    }
+
+    function hideStockMessages() {
+        if (saldoDisponivelText) {
+            saldoDisponivelText.style.display = 'none';
+        }
+        if (quantidadeErro) {
+            quantidadeErro.style.display = 'none';
+        }
+    }
+
+    function submitMovementForm() {
+        if (signaturePad && assinaturaInput) {
+            assinaturaInput.value = signaturePad.toDataURL('image/png');
+        }
+        if (movementForm) {
+            movementForm.submit();
+        }
+    }
+
+    function startUndoCountdown() {
+        let remainingSeconds = UNDO_COUNTDOWN_SECONDS;
+        if (!saveButton || !undoSubmitWrapper || !undoTimerSpan) {
+            submitMovementForm();
+            return;
+        }
+
+        saveButton.style.display = 'none';
+        undoSubmitWrapper.style.display = 'flex';
+        undoSubmitWrapper.style.alignItems = 'center';
+        undoTimerSpan.textContent = String(remainingSeconds);
+
+        undoInterval = window.setInterval(function () {
+            remainingSeconds -= 1;
+            if (remainingSeconds <= 0) {
+                clearInterval(undoInterval);
+                undoInterval = null;
+                if (undoTimerSpan) {
+                    undoTimerSpan.textContent = '0';
+                }
+                submitMovementForm();
+                return;
+            }
+            if (undoTimerSpan) {
+                undoTimerSpan.textContent = String(remainingSeconds);
+            }
+        }, 1000);
+
+        undoTimeout = window.setTimeout(function () {
+            if (undoInterval) {
+                clearInterval(undoInterval);
+                undoInterval = null;
+            }
+            undoTimeout = null;
+            submitMovementForm();
+        }, UNDO_COUNTDOWN_SECONDS * 1000);
+    }
+
+    function handleUndoClick() {
+        resetUndoInterface();
+    }
+
+    function updateSaldoDisponivel() {
+        if (!itemSelect || !saldoDisponivelText) {
+            return;
+        }
+
+        const selectedOption = itemSelect.selectedOptions[0];
+        if (!selectedOption || !itemSelect.value) {
+            saldoDisponivelText.style.display = 'none';
+            if (comprimentoFieldWrapper) {
+                comprimentoFieldWrapper.style.display = 'none';
+            }
+            return;
+        }
+
+        const saldo = Number(selectedOption.dataset.stock || 0);
+        const unidade = String(selectedOption.dataset.unidade || 'un').toLowerCase();
+        const requerComprimentoValue = selectedOption.dataset.requerComprimento ?? selectedOption.dataset.requer_comprimento;
+        const explicitRequer = requerComprimentoValue !== undefined && String(requerComprimentoValue) === '1';
+        const requerComprimento = explicitRequer || unidade === 'm';
+
+        saldoDisponivelText.textContent = `Disponível: ${saldo} ${unidade}`;
+        saldoDisponivelText.style.display = 'block';
+
+        if (comprimentoFieldWrapper) {
+            comprimentoFieldWrapper.style.display = requerComprimento ? 'block' : 'none';
+            if (!requerComprimento) {
+                const comprimentoInput = comprimentoFieldWrapper.querySelector('input[name="comprimento"]');
+                if (comprimentoInput) {
+                    comprimentoInput.value = '';
+                }
+            }
+        }
+    }
+
+    function showQuantidadeErro(message) {
+        if (!quantidadeErro) {
+            return;
+        }
+        quantidadeErro.textContent = message;
+        quantidadeErro.style.display = 'block';
+    }
+
+    function validateQuantityAgainstStock(event) {
+        if (!quantityInput || !itemSelect) {
+            return false;
+        }
+
+        const tipoValue = normalizeText(tipoField?.value || '');
+        const quantity = Number(quantityInput.value);
+        const stock = getSelectedItemStock();
+
+        if (tipoValue !== 'saida') {
+            if (quantidadeErro) {
+                quantidadeErro.style.display = 'none';
+            }
+            return false;
+        }
+
+        if (quantity > stock) {
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+            showQuantidadeErro('Quantidade superior ao saldo disponível!');
+            return true;
+        }
+
+        if (quantidadeErro) {
+            quantidadeErro.style.display = 'none';
+        }
+        return false;
+    }
+
+    function confirmHighQuantity(event) {
+        if (validateQuantityAgainstStock(event)) {
+            return true;
+        }
+
+        if (!quantityInput || !itemSelect) {
+            return false;
+        }
+
+        const tipoValue = normalizeText(tipoField?.value || '');
+        const quantity = Number(quantityInput.value);
+        const stock = getSelectedItemStock();
+        if (!quantity || quantity < 1 || stock <= 0 || tipoValue !== 'saida') {
+            return false;
+        }
+
+        if (quantity >= stock * 0.5) {
+            const percent = Math.round((quantity / stock) * 100);
+            if (!window.confirm(`Tem certeza? Essa saída representa ${percent}% do saldo atual (${stock}).`)) {
+                event.preventDefault();
+                return true;
+            }
+        }
+        return false;
+    }
 
     if (signatureCanvas && window.SignaturePad) {
         signaturePad = new SignaturePad(signatureCanvas, {
@@ -233,28 +437,144 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         window.signaturePad = signaturePad;
+    }
 
-        if (movementForm) {
-            movementForm.addEventListener('submit', function (event) {
-                if (signaturePad.isEmpty()) {
-                    alert('Assinatura é obrigatória.');
-                    event.preventDefault();
-                    return;
-                }
-                if (assinaturaInput) {
-                    assinaturaInput.value = signaturePad.toDataURL('image/png');
+    if (undoButton) {
+        undoButton.addEventListener('click', function () {
+            handleUndoClick();
+        });
+    }
+
+    if (movementForm) {
+        movementForm.addEventListener('submit', function (event) {
+            if (undoTimeout) {
+                event.preventDefault();
+                return;
+            }
+
+            if (signaturePad && signaturePad.isEmpty()) {
+                alert('Assinatura é obrigatória.');
+                event.preventDefault();
+                return;
+            }
+
+            if (confirmHighQuantity(event)) {
+                return;
+            }
+
+            event.preventDefault();
+            resetUndoInterface();
+            startUndoCountdown();
+        });
+    }
+
+    const itemSelect = document.getElementById('item_search');
+    const quantityInput = document.querySelector('input[name="quantidade"]');
+    let itemTomSelect = null;
+
+    if (itemSelect) {
+        itemSelect.addEventListener('change', function () {
+            updateSaldoDisponivel();
+            if (quantidadeErro) {
+                quantidadeErro.style.display = 'none';
+            }
+        });
+    }
+
+    if (quantityInput) {
+        quantityInput.addEventListener('input', function () {
+            validateQuantityAgainstStock();
+        });
+    }
+
+    if (tipoField) {
+        tipoField.addEventListener('change', function () {
+            validateQuantityAgainstStock();
+        });
+    }
+
+    updateSaldoDisponivel();
+
+    function getSelectedItemStock() {
+        if (!itemSelect || !itemSelect.value) {
+            return 0;
+        }
+        const selectedOption = itemSelect.selectedOptions[0];
+        return selectedOption ? parseFloat(selectedOption.dataset.stock || '0') : 0;
+    }
+
+    if (itemSelect && typeof TomSelect !== 'undefined' && Array.isArray(window.ITEMS)) {
+            itemTomSelect = new TomSelect(itemSelect, {
+                valueField: 'value',
+                labelField: 'text',
+                searchField: ['text', 'tokens'],
+                maxOptions: 8,
+                maxItems: 1,
+                itemClass: 'ts-single-selected',
+                placeholder: 'Pesquisar item...',
+                allowEmptyOption: true,
+                openOnFocus: false,
+                closeAfterSelect: true,
+                hideSelected: true,
+                create: false,
+                options: Array.isArray(window.INITIAL_ITEMS) ? window.INITIAL_ITEMS : [],
+                itemClass: 'ts-single-selected',
+                render: {
+                    option: function(data, escape) {
+                        return '<div class="ts-option-item">' + escape(data.text) + '</div>';
+                    },
+                    item: function(data, escape) {
+                        return '<div>' + escape(data.text) + '</div>';
+                    }
+                },
+                onItemAdd: function(value) {
+                    if (!itemSelect || !value) {
+                        return;
+                    }
+
+                    let existingOption = itemSelect.querySelector('option[value="' + value.replace(/"/g, '\\"') + '"]');
+                    if (!existingOption) {
+                        existingOption = document.createElement('option');
+                        existingOption.value = value;
+                        existingOption.textContent = (this.options[value] && this.options[value].text) ? this.options[value].text : value;
+                        const data = this.options[value] || {};
+                        existingOption.dataset.stock = data.stock || '0';
+                        existingOption.dataset.unidade = data.unidade || 'un';
+                        existingOption.dataset.requerComprimento = String(data.requer_comprimento || data.requerComprimento || 0);
+                        itemSelect.appendChild(existingOption);
+                    }
+
+                    itemSelect.value = value;
+                    existingOption.selected = true;
+                    itemSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    setTimeout(() => {
+                        if (typeof this.close === 'function') {
+                            this.close();
+                        }
+                        if (this.control_input && typeof this.control_input.blur === 'function') {
+                            this.control_input.blur();
+                        }
+                    }, 0);
+                },
+                onChange: function(value) {
+                    if (itemSelect) {
+                        itemSelect.value = value || '';
+                        itemSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                },
+                load: function(query, callback) {
+                    if (!query.length) {
+                        return callback();
+                    }
+                    const search = query.toLowerCase();
+                    const filtered = window.ITEMS.filter(function(row) {
+                        return row.text.toLowerCase().includes(search) || row.tokens.toLowerCase().includes(search);
+                    });
+                    callback(filtered.slice(0, 30));
                 }
             });
+        } else if (itemSelect) {
+            console.warn('TomSelect não foi encontrado para o campo de item. Verifique se o script foi carregado.');
         }
-    }
-});
-
-function showSignature(src) {
-    const win = window.open('', '_blank');
-    if (!win) {
-        alert('Não foi possível abrir a visualização da assinatura.');
-        return;
-    }
-    win.document.write("<html><head><title>Assinatura</title></head><body style='margin:0; background:#111; display:flex; align-items:center; justify-content:center; height:100vh;'><img src='" + src + "' style='max-width:90vw; max-height:90vh; box-shadow:0 0 20px rgba(0,0,0,0.5); border-radius:8px; background:#fff; padding:12px;'/><button onclick='window.close()' style='position:absolute; top:20px; right:20px; padding:10px 16px; background:#22c55e; color:#fff; border:none; border-radius:8px; cursor:pointer;'>Fechar</button></body></html>");
-    win.document.close();
-}
+    });

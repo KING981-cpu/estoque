@@ -33,6 +33,11 @@ class InventoryApp
         return $this->items->all();
     }
 
+    public function getPopularItems(int $limit = 20): array
+    {
+        return $this->items->popular($limit);
+    }
+
     public function getFuncionarios(): array
     {
         return $this->funcionarios->all();
@@ -48,9 +53,14 @@ class InventoryApp
         return $this->spreadsheetLocationLoader->loadHierarchy();
     }
 
-    public function getMovements(int $itemId = null): array
+    public function getMovements(int $itemId = null, ?string $startDate = null, ?string $endDate = null): array
     {
-        return $this->movements->history($itemId);
+        return $this->movements->history($itemId, $startDate, $endDate);
+    }
+
+    public function getMovementReport(int $itemId = null, ?int $tipoRegistro = 1, ?string $startDate = null, ?string $endDate = null): array
+    {
+        return $this->movements->movementReport($itemId, $tipoRegistro, $startDate, $endDate);
     }
 
     public function getMovementSummary(): array
@@ -58,24 +68,9 @@ class InventoryApp
         return $this->movements->summary();
     }
 
-    public function addItem(string $name, int $quantity = 0): int
+    public function addItem(string $name, int $quantity = 0, int $tipoRegistro = 0, string $synonyms = '', string $unidadeMedida = 'un', int $requerComprimento = 0): int
     {
-        $itemId = $this->items->getOrCreateByName($name);
-
-        if ($quantity > 0) {
-            $this->movements->record(
-                $itemId,
-                'entrada',
-                date('Y-m-d'),
-                $quantity,
-                '',
-                'Consumo',
-                '',
-                null,
-                null
-            );
-        }
-
+        $itemId = $this->items->getOrCreateByName($name, $tipoRegistro, $synonyms, $unidadeMedida, $requerComprimento, $quantity);
         return $itemId;
     }
 
@@ -115,17 +110,17 @@ class InventoryApp
         return $this->items->addNotificationEmail($itemId, $email);
     }
 
-    public function updateItemThresholds(int $itemId, int $minQuantity, int $desiredQuantity): bool
+    public function updateItemThresholds(int $itemId, int $minQuantity, int $desiredQuantity, int $purchaseBuffer = 0, string $synonyms = '', string $unidadeMedida = 'un', int $requerComprimento = 0): bool
     {
-        return $this->items->updateThresholds($itemId, $minQuantity, $desiredQuantity);
+        return $this->items->updateThresholds($itemId, $minQuantity, $desiredQuantity, $purchaseBuffer, $synonyms, $unidadeMedida, $requerComprimento);
     }
 
     /**
      * Retorna o relatório de consumo mensal de cada item.
      */
-    public function getMonthlyConsumptionReport(string $yearMonth = null): array
+    public function getMonthlyConsumptionReport(string $yearMonth = null, ?int $tipoRegistro = null): array
     {
-        return $this->movements->monthlyConsumptionReport($yearMonth);
+        return $this->movements->monthlyConsumptionReport($yearMonth, $tipoRegistro);
     }
 
     public function recordMovimentacao(array $data): int
@@ -147,17 +142,47 @@ class InventoryApp
             $localidadeId = $this->localidades->ensureExists(trim($data['localidade_path']));
         }
 
-        $movementId = $this->movements->record(
-            $itemId,
-            $data['tipo'],
-            $data['data_item'],
-            (int)$data['quantidade'],
-            $data['assinatura_data'] ?? '',
-            $data['uso'],
-            $data['observacao'] ?? '',
-            !empty($data['id_funcionario']) ? (int)$data['id_funcionario'] : null,
-            $localidadeId
-        );
+        $movementTipoRegistro = isset($data['tipo_registro'])
+            ? (int)$data['tipo_registro']
+            : $this->items->getTipoRegistro($itemId);
+
+        $quantidade = max(0, (int)$data['quantidade']);
+        if ($quantidade <= 0) {
+            throw new \InvalidArgumentException('A quantidade movimentada deve ser maior que zero.');
+        }
+
+        if ($data['tipo'] === 'saída') {
+            $currentStock = $this->getStock($itemId);
+            if ($quantidade > $currentStock) {
+                throw new \InvalidArgumentException('Quantidade superior ao saldo disponível.');
+            }
+        }
+
+        $this->database->pdo()->beginTransaction();
+        try {
+            $movementId = $this->movements->record(
+                $itemId,
+                $data['tipo'],
+                $data['data_item'],
+                $quantidade,
+                $data['assinatura_data'] ?? '',
+                $data['uso'],
+                $movementTipoRegistro,
+                $data['observacao'] ?? '',
+                trim($data['patrimonio'] ?? ''),
+                !empty($data['id_funcionario']) ? (int)$data['id_funcionario'] : null,
+                $localidadeId
+            );
+
+            $delta = $data['tipo'] === 'entrada' ? $quantidade : -$quantidade;
+            $this->items->adjustStock($itemId, $delta);
+            $this->database->pdo()->commit();
+        } catch (\Throwable $exception) {
+            if ($this->database->pdo()->inTransaction()) {
+                $this->database->pdo()->rollBack();
+            }
+            throw $exception;
+        }
 
         $stock = $this->getStock($itemId);
         $item = $this->getItemWithThresholds($itemId);
@@ -233,14 +258,14 @@ class InventoryApp
         }
 
         $stock = $this->getStock($itemId);
-        $target = max((int)$item['quantidade_minima'], (int)$item['quantidade_desejavel']);
+        $desired = (int)$item['quantidade_desejavel'];
+        $purchaseBuffer = max(0, (int)($item['quantidade_sobra_compra'] ?? 0));
 
-        if ($stock >= $target) {
+        if ($stock >= $desired) {
             return 0;
         }
 
-        $additionalBuffer = (int)ceil($this->movements->totalConsumptionSinceDate($itemId, $this->movements->getFirstConsumptionDate($itemId) ?? date('Y-m-d')) / max(1, $this->calculateWorkingDays($this->movements->getFirstConsumptionDate($itemId) ?? date('Y-m-d'), date('Y-m-d'))) );
-        return max(0, $target - $stock + $additionalBuffer);
+        return max(0, $desired - $stock + $purchaseBuffer);
     }
 
     /**

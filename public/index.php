@@ -18,7 +18,11 @@ try {
     if ($action === 'add_item') {
         $itemName = trim($_POST['item_name'] ?? '');
         $quantity = isset($_POST['item_quantity']) ? (int)$_POST['item_quantity'] : 0;
-        $itemId = $app->addItem($itemName, $quantity);
+        $tipoRegistro = isset($_POST['tipo_registro']) ? (int)$_POST['tipo_registro'] : 0;
+        $synonyms = trim($_POST['sinonimos'] ?? '');
+        $unidadeMedida = trim($_POST['unidade_medida'] ?? 'un');
+        $requerComprimento = !empty($_POST['requer_comprimento']) ? 1 : 0;
+        $itemId = $app->addItem($itemName, $quantity, $tipoRegistro, $synonyms, $unidadeMedida, $requerComprimento);
         $alert = 'Item registrado com sucesso.';
         if ($quantity > 0) {
             $alert = 'Item registrado com quantidade inicial de ' . $quantity . '.';
@@ -35,6 +39,7 @@ try {
             'quantidade' => (int)($_POST['quantidade'] ?? 0),
             'assinatura_data' => trim($_POST['assinatura_data'] ?? ''),
             'uso' => $_POST['uso'] ?? 'Consumo',
+            'tipo_registro' => isset($_POST['tipo_registro']) ? (int)$_POST['tipo_registro'] : 1,
             'observacao' => trim($_POST['observacao'] ?? ''),
             'id_funcionario' => !empty($_POST['id_funcionario']) ? (int)$_POST['id_funcionario'] : null,
             'id_localidade' => !empty($_POST['id_localidade']) ? (int)$_POST['id_localidade'] : null,
@@ -48,9 +53,13 @@ try {
         $itemId = !empty($_POST['item_id']) ? (int)$_POST['item_id'] : 0;
         $minQuantity = max(0, (int)($_POST['quantidade_minima'] ?? 0));
         $desiredQuantity = max(0, (int)($_POST['quantidade_desejavel'] ?? 0));
+        $purchaseBuffer = max(0, (int)($_POST['quantidade_sobra_compra'] ?? 0));
+        $synonyms = trim($_POST['sinonimos'] ?? '');
+        $unidadeMedida = trim($_POST['unidade_medida'] ?? 'un');
+        $requerComprimento = !empty($_POST['requer_comprimento']) ? 1 : 0;
 
         if ($itemId > 0) {
-            $app->updateItemThresholds($itemId, $minQuantity, $desiredQuantity);
+            $app->updateItemThresholds($itemId, $minQuantity, $desiredQuantity, $purchaseBuffer, $synonyms, $unidadeMedida, $requerComprimento);
 
             $notificationEmail = trim($_POST['notification_email'] ?? '');
             if ($notificationEmail !== '' && filter_var($notificationEmail, FILTER_VALIDATE_EMAIL)) {
@@ -67,32 +76,49 @@ try {
 }
 
 $items = $app->getItems();
+$popularItems = $app->getPopularItems(20);
 $funcionarios = $app->getFuncionarios();
 $localidades = $app->getLocalidades();
 $localidadeHierarchy = $app->getLocalidadeHierarchy();
-$movementHistory = $app->getMovements();
+
+$historyStart = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['data_inicio'] ?? '') ? $_GET['data_inicio'] : null;
+$historyEnd = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['data_fim'] ?? '') ? $_GET['data_fim'] : null;
+$movementHistory = $app->getMovements(null, $historyStart, $historyEnd);
 
 $report = $_GET['report'] ?? 'movimentacoes';
-$allowedReports = ['movimentacoes', 'consumo', 'estoque'];
+$allowedReports = ['movimentacoes', 'consumo', 'estoque', 'mailhog'];
 if (!in_array($report, $allowedReports, true)) {
     $report = 'movimentacoes';
 }
+
+$reportStartDate = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['start_date'] ?? '') ? $_GET['start_date'] : null;
+$reportEndDate = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['end_date'] ?? '') ? $_GET['end_date'] : null;
+$reportTipoRegistro = isset($_GET['tipo_registro']) && in_array($_GET['tipo_registro'], ['0','1','all'], true) ? $_GET['tipo_registro'] : '1';
+$tipoRegistroFilter = $reportTipoRegistro === 'all' ? null : (int)$reportTipoRegistro;
+$movementReport = $app->getMovementReport(null, $tipoRegistroFilter, $reportStartDate, $reportEndDate);
+if (!in_array($report, $allowedReports, true)) {
+    $report = 'movimentacoes';
+}
+
+$mailhogUrl = getenv('MAILHOG_WEB_URL') ?: 'http://localhost:8025';
 
 $perPage = max(5, min(100, (int)($_GET['per_page'] ?? 10)));
 $page = max(1, (int)($_GET['page'] ?? 1));
 
 $reportYear = preg_match('/^\d{4}$/', $_GET['year'] ?? '') ? $_GET['year'] : date('Y');
 $reportMonth = preg_match('/^(0[1-9]|1[0-2])$/', $_GET['month'] ?? '') ? $_GET['month'] : date('m');
+$reportTipoRegistro = isset($_GET['tipo_registro']) && in_array($_GET['tipo_registro'], ['0','1','all'], true) ? $_GET['tipo_registro'] : '1';
+$tipoRegistroFilter = $reportTipoRegistro === 'all' ? null : (int)$reportTipoRegistro;
 $yearMonthFilter = $report === 'consumo' ? sprintf('%s-%s', $reportYear, $reportMonth) : null;
-$monthlyConsumption = $app->getMonthlyConsumptionReport($yearMonthFilter);
+$monthlyConsumption = $app->getMonthlyConsumptionReport($yearMonthFilter, $tipoRegistroFilter);
 
-$movementTotal = count($movementHistory);
+$movementTotal = count($movementReport);
 $movementPages = (int)max(1, ceil($movementTotal / $perPage));
-$movementHistoryPaged = array_slice($movementHistory, ($page - 1) * $perPage, $perPage);
+$movementHistoryPaged = array_slice($movementReport, ($page - 1) * $perPage, $perPage);
 
-$historyTotal = $movementTotal;
-$historyPages = $movementPages;
-$historyPaged = $movementHistoryPaged;
+$historyTotal = count($movementHistory);
+$historyPages = (int)max(1, ceil($historyTotal / $perPage));
+$historyPaged = array_slice($movementHistory, ($page - 1) * $perPage, $perPage);
 
 $monthlyTotal = count($monthlyConsumption);
 $monthlyPages = (int)max(1, ceil($monthlyTotal / $perPage));
@@ -100,6 +126,10 @@ $monthlyConsumptionPaged = array_slice($monthlyConsumption, ($page - 1) * $perPa
 
 $itemReportRows = [];
 foreach ($items as $item) {
+    if (isset($item['tipo_registro']) && (int)$item['tipo_registro'] === 0) {
+        continue;
+    }
+
     $itemId = (int)$item['id_item'];
     $stock = $app->getStock($itemId);
     $estimateDays = $app->estimateDaysUntilMinimum($itemId);
@@ -111,6 +141,8 @@ foreach ($items as $item) {
         'item_name' => $item['item'],
         'quantidade_minima' => (int)($item['quantidade_minima'] ?? 0),
         'quantidade_desejavel' => (int)($item['quantidade_desejavel'] ?? 0),
+        'quantidade_sobra_compra' => (int)($item['quantidade_sobra_compra'] ?? 0),
+        'sinonimos' => $item['sinonimos'] ?? '',
         'saldo_atual' => $stock,
         'estimativa' => $estimateDays,
         'recomendacao' => $recommendedQuantity,
@@ -137,6 +169,7 @@ function tabClass(string $tab): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estoque PHP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css">
     <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
@@ -166,7 +199,23 @@ function tabClass(string $tab): string
                 <form method="post" class="small-form">
                     <input type="hidden" name="action" value="add_item">
                     <label>Nome do item<br><input name="item_name" required></label>
-                    <label>Quantidade inicial<br><input type="number" name="item_quantity" min="0" value="0"></label>
+                    <label>Saldo inicial<br><input type="number" name="item_quantity" min="0" value="0"></label>
+                    <label>Unidade de medida<br>
+                        <select name="unidade_medida">
+                            <option value="un">Unidades</option>
+                            <option value="m">Metros</option>
+                            <option value="kg">Quilogramas</option>
+                            <option value="cx">Caixas</option>
+                        </select>
+                    </label>
+                    <label><input type="checkbox" name="requer_comprimento" value="1"> Requer especificação de comprimento</label>
+                    <label>Tipo de estoque inicial<br>
+                        <select name="tipo_registro">
+                            <option value="0">Saldo de transição (Temporário)</option>
+                            <option value="1">Carga permanente (Permanente)</option>
+                        </select>
+                    </label>
+                    <label>Sinônimos (vírgula separado)<br><input name="sinonimos" placeholder="fita, cabo, energia"></label>
                     <button type="submit">Cadastrar Item</button>
                 </form>
 
@@ -211,14 +260,38 @@ function tabClass(string $tab): string
                     </label>
                     <label>Data<br><input type="date" name="data_item" value="<?= date('Y-m-d') ?>" required></label>
                     <label>Item<br>
-                        <select name="id_item" id="item_name" required>
-                            <option value="">Selecione o item</option>
-                            <?php foreach ($items as $item): ?>
-                                <option value="<?= e($item['id_item']) ?>"><?= e($item['item']) ?></option>
+                        <select name="id_item" id="item_search" required>
+                            <option value="" disabled selected>Selecione o item</option>
+                            <?php foreach ($popularItems as $item): ?>
+                                <option
+                                    value="<?= e($item['id_item']) ?>"
+                                    data-tokens="<?= e($item['item'] . ($item['sinonimos'] ? ', ' . $item['sinonimos'] : '')) ?>"
+                                    data-synonyms="<?= e($item['sinonimos']) ?>"
+                                    data-stock="<?= e($app->getStock((int)$item['id_item'])) ?>"
+                                    data-unidade="<?= e($item['unidade_medida'] ?? 'un') ?>"
+                                    data-requer-comprimento="<?= e((string)($item['requer_comprimento'] ?? 0)) ?>"
+                                >
+                                    <?= e($item['item']) ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
                     </label>
+                    <label>Patrimônio (opcional)<br><input type="text" name="patrimonio" placeholder="Ex: 1234, 5678"></label>
                     <label>Quantidade<br><input type="number" name="quantidade" min="1" value="1" required></label>
+                    <small id="saldo-disponivel" style="display:none; color:#334155; margin-top:6px; display:block;">Disponível: 0 un</small>
+                    <div id="field-comprimento" style="display:none; margin-top:10px;">
+                        <label>Metragem/Comprimento<br><input type="number" step="0.01" name="comprimento" min="0" value=""></label>
+                    </div>
+                    <small id="quantidade-erro" style="display:none; color:#b91c1c; margin-top:6px; display:block;">Quantidade superior ao saldo disponível!</small>
+                    <div id="field-item-condition" class="form-field hidden" style="display:none;">
+                        <label>Condição do item<br>
+                            <select name="condicao_item">
+                                <option value="" disabled selected>Selecione a condição</option>
+                                <option value="novo">Novo</option>
+                                <option value="usado">Usado</option>
+                            </select>
+                        </label>
+                    </div>
                     <div id="field-funcionario" class="form-field hidden" style="display:none;">
                         <label>Funcionário<br>
                             <select name="id_funcionario">
@@ -255,27 +328,40 @@ function tabClass(string $tab): string
                     <button type="button" id="signature-clear" class="full-row" style="width:100%; cursor:pointer;">Limpar Assinatura</button>
                     <input type="hidden" name="assinatura_data" id="assinatura_data">
                     <button type="submit" class="btn-salvar full-row">Gravar Movimentação</button>
+                    <div id="submit-undo-wrapper" class="full-row" style="display:none; align-items:center; gap:12px; margin-top:16px;">
+                        <div id="undo-message">
+                            Movimentação agendada. Desfazer em <span id="undo-timer">5</span>s...
+                        </div>
+                        <button type="button" id="undo-button">Desfazer</button>
+                    </div>
                 </form>
             </section>
         <?php elseif ($activeTab === 'historico'): ?>
             <section>
                 <h2>Histórico de Movimentações</h2>
                 <?php $movimentacoes = $historyPaged; ?>
+                <div class="table-actions">
+                    <form method="get" class="historico-filter-form">
+                        <input type="hidden" name="tab" value="historico">
+                        <label>Data inicial<br>
+                            <input type="date" name="data_inicio" value="<?= e($historyStart ?? '') ?>">
+                        </label>
+                        <label>Data final<br>
+                            <input type="date" name="data_fim" value="<?= e($historyEnd ?? '') ?>">
+                        </label>
+                        <label>Registros por página<br>
+                            <select name="per_page">
+                                <?php foreach ([5, 10, 20, 50] as $option): ?>
+                                    <option value="<?= e((string)$option) ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= e((string)$option) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                        <button type="submit">Filtrar</button>
+                    </form>
+                </div>
                 <?php if (empty($movimentacoes)): ?>
                     <p>Nenhuma movimentação registrada.</p>
                 <?php else: ?>
-                    <div class="table-actions">
-                        <form method="get" class="inline-form">
-                            <input type="hidden" name="tab" value="historico">
-                            <label>Registros por página<br>
-                                <select name="per_page" onchange="this.form.submit()">
-                                    <?php foreach ([5, 10, 20, 50] as $option): ?>
-                                        <option value="<?= e((string)$option) ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= e((string)$option) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </label>
-                        </form>
-                    </div>
                     <table>
                         <thead>
                             <tr>
@@ -287,6 +373,7 @@ function tabClass(string $tab): string
                                 <th>Uso</th>
                                 <th>Funcionário</th>
                                 <th>Localidade</th>
+                                <th>Patrimônio</th>
                                 <th>Assinatura</th>
                             </tr>
                         </thead>
@@ -302,6 +389,7 @@ function tabClass(string $tab): string
                                     <td><?= e($movimento['uso']) ?></td>
                                     <td><?= e($movimento['funcionario'] ?? '---') ?></td>
                                     <td><?= e($movimento['localidade'] ?? '---') ?></td>
+                                    <td><?= e($movimento['patrimonio'] ?? '---') ?></td>
                                     <td class="signature-cell"><?= $assinatura ?></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -310,7 +398,7 @@ function tabClass(string $tab): string
                     <?php if ($historyPages > 1): ?>
                         <div class="pagination">
                             <?php for ($i = 1; $i <= $historyPages; $i++): ?>
-                                <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=historico&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?>"><?= e((string)$i) ?></a>
+                                <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=historico&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?><?php if ($historyStart !== null): ?>&data_inicio=<?= e(urlencode($historyStart)) ?><?php endif; ?><?php if ($historyEnd !== null): ?>&data_fim=<?= e(urlencode($historyEnd)) ?><?php endif; ?>"><?= e((string)$i) ?></a>
                             <?php endfor; ?>
                         </div>
                     <?php endif; ?>
@@ -323,27 +411,56 @@ function tabClass(string $tab): string
                     <a class="<?= $report === 'movimentacoes' ? 'report-button active' : 'report-button' ?>" href="?tab=relatorio&report=movimentacoes&per_page=<?= e((string)$perPage) ?>">Relatório de Movimentações</a>
                     <a class="<?= $report === 'consumo' ? 'report-button active' : 'report-button' ?>" href="?tab=relatorio&report=consumo&per_page=<?= e((string)$perPage) ?>">Relatório de Consumo Mensal</a>
                     <a class="<?= $report === 'estoque' ? 'report-button active' : 'report-button' ?>" href="?tab=relatorio&report=estoque&per_page=<?= e((string)$perPage) ?>">Relatório de Estoque e Estimativa</a>
+                    <a class="<?= $report === 'mailhog' ? 'report-button active' : 'report-button' ?>" href="?tab=relatorio&report=mailhog">MailHog</a>
                 </div>
             </section>
 
             <?php if ($report === 'movimentacoes'): ?>
                 <section>
                     <h2>Relatório de Movimentações</h2>
-                    <?php if (empty($movementHistory)): ?>
-                        <p>Nenhuma movimentação registrada.</p>
-                    <?php else: ?>
-                        <div class="table-actions">
-                            <form method="get" class="inline-form">
-                                <input type="hidden" name="tab" value="relatorio">
-                                <input type="hidden" name="report" value="movimentacoes">
+                        <form method="get" class="report-filter-form">
+                            <input type="hidden" name="tab" value="relatorio">
+                            <input type="hidden" name="report" value="movimentacoes">
+                            <input type="hidden" name="page" value="1">
+                            <div class="table-actions">
+                                <label>Data início<br>
+                                    <input type="date" name="start_date" value="<?= e($_GET['start_date'] ?? '') ?>">
+                                </label>
+                                <label>Data fim<br>
+                                    <input type="date" name="end_date" value="<?= e($_GET['end_date'] ?? '') ?>">
+                                </label>
+                                <label>Tipo de registro<br>
+                                    <select name="tipo_registro">
+                                        <option value="all" <?= $reportTipoRegistro === 'all' ? 'selected' : '' ?>>Todos</option>
+                                        <option value="1" <?= $reportTipoRegistro === '1' ? 'selected' : '' ?>>Apenas Itens Permanentes</option>
+                                        <option value="0" <?= $reportTipoRegistro === '0' ? 'selected' : '' ?>>Apenas Itens Temporários</option>
+                                    </select>
+                                </label>
                                 <label>Registros por página<br>
-                                    <select name="per_page" onchange="this.form.submit()">
+                                    <select name="per_page">
                                         <?php foreach ([5, 10, 20, 50] as $option): ?>
                                             <option value="<?= e((string)$option) ?>" <?= $perPage === $option ? 'selected' : '' ?>><?= e((string)$option) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </label>
-                            </form>
+                                <button type="submit">Filtrar</button>
+                            </div>
+                        </form>
+                    <?php if (empty($movementReport)): ?>
+                        <p>Nenhuma movimentação registrada.</p>
+                    <?php else: ?>
+                        <?php $exportMovementBaseUrl = 'exportar.php?' . http_build_query(array_filter([
+                            'tab' => 'relatorio',
+                            'report' => 'movimentacoes',
+                            'tipo_registro' => $_GET['tipo_registro'] ?? null,
+                            'start_date' => $_GET['start_date'] ?? null,
+                            'end_date' => $_GET['end_date'] ?? null,
+                        ], function ($value) { return $value !== null && $value !== ''; })); ?>
+                        <div class="table-actions">
+                            <div class="export-buttons">
+                                <a class="report-button" href="<?= e($exportMovementBaseUrl) ?>&format=csv">Exportar para CSV</a>
+                                <a class="report-button" href="<?= e($exportMovementBaseUrl) ?>&format=pdf">Exportar para PDF</a>
+                            </div>
                         </div>
                         <table>
                             <thead>
@@ -356,6 +473,7 @@ function tabClass(string $tab): string
                                     <th>Uso</th>
                                     <th>Funcionário</th>
                                     <th>Localidade</th>
+                                    <th>Patrimônio</th>
                                     <th>Assinatura</th>
                                 </tr>
                             </thead>
@@ -371,6 +489,7 @@ function tabClass(string $tab): string
                                         <td><?= e($movimento['uso']) ?></td>
                                         <td><?= e($movimento['funcionario'] ?? '---') ?></td>
                                         <td><?= e($movimento['localidade'] ?? '---') ?></td>
+                                        <td><?= e($movimento['patrimonio'] ?? '---') ?></td>
                                         <td class="signature-cell"><?= $assinatura ?></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -404,6 +523,13 @@ function tabClass(string $tab): string
                                     <?php $value = sprintf('%02d', $m); ?>
                                     <option value="<?= e($value) ?>" <?= $reportMonth === $value ? 'selected' : '' ?>><?= e($value) ?></option>
                                 <?php endfor; ?>
+                            </select>
+                        </label>
+                        <label>Tipo de registro<br>
+                            <select name="tipo_registro">
+                                <option value="1" <?= $reportTipoRegistro === '1' ? 'selected' : '' ?>>Apenas Itens Permanentes</option>
+                                <option value="0" <?= $reportTipoRegistro === '0' ? 'selected' : '' ?>>Apenas Itens Temporários</option>
+                                <option value="all" <?= $reportTipoRegistro === 'all' ? 'selected' : '' ?>>Todos</option>
                             </select>
                         </label>
                         <label>Registros por página<br>
@@ -440,7 +566,7 @@ function tabClass(string $tab): string
                         <?php if ($monthlyPages > 1): ?>
                             <div class="pagination">
                                 <?php for ($i = 1; $i <= $monthlyPages; $i++): ?>
-                                    <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=relatorio&report=consumo&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?>&year=<?= e($reportYear) ?>&month=<?= e($reportMonth) ?>"><?= e((string)$i) ?></a>
+                                    <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=relatorio&report=consumo&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?>&year=<?= e($reportYear) ?>&month=<?= e($reportMonth) ?>&tipo_registro=<?= e($reportTipoRegistro) ?>"><?= e((string)$i) ?></a>
                                 <?php endfor; ?>
                             </div>
                         <?php endif; ?>
@@ -475,6 +601,7 @@ function tabClass(string $tab): string
                                     <th>Saldo Atual</th>
                                     <th>Quantidade Mínima</th>
                                     <th>Quantidade Desejável</th>
+                                    <th>Sobra Compra</th>
                                     <th>Estimativa até o mínimo</th>
                                     <th>Recomendação de compra</th>
                                     <th>Destinatários</th>
@@ -488,6 +615,7 @@ function tabClass(string $tab): string
                                         <td><?= e((string)$row['saldo_atual']) ?></td>
                                         <td><?= e((string)$row['quantidade_minima']) ?></td>
                                         <td><?= e((string)$row['quantidade_desejavel']) ?></td>
+                                        <td><?= e((string)($row['quantidade_sobra_compra'] ?? 0)) ?></td>
                                         <td><?= e($row['estimativa'] === null ? 'sem consumo suficiente' : sprintf('%.1f dias', $row['estimativa'])) ?></td>
                                         <td><?= e((string)$row['recomendacao']) ?></td>
                                         <td><?= e(implode(', ', $row['notification_emails'])) ?></td>
@@ -497,6 +625,19 @@ function tabClass(string $tab): string
                                                 <input type="hidden" name="item_id" value="<?= e((string)$row['id_item']) ?>">
                                                 <label>Min<br><input type="number" name="quantidade_minima" min="0" value="<?= e((string)$row['quantidade_minima']) ?>" style="width:70px"></label>
                                                 <label>Desejável<br><input type="number" name="quantidade_desejavel" min="0" value="<?= e((string)$row['quantidade_desejavel']) ?>" style="width:70px"></label>
+                                                <label>Sobra acima do desejável<br><input type="number" name="quantidade_sobra_compra" min="0" value="<?= e((string)($row['quantidade_sobra_compra'] ?? 0)) ?>" style="width:70px"></label>
+                                                <label>Unidade de medida<br>
+                                                    <select name="unidade_medida" style="width:120px">
+                                                        <option value="un" <?= e($row['unidade_medida'] ?? 'un') === 'un' ? 'selected' : '' ?>>Un</option>
+                                                        <option value="m" <?= e($row['unidade_medida'] ?? 'un') === 'm' ? 'selected' : '' ?>>m</option>
+                                                        <option value="kg" <?= e($row['unidade_medida'] ?? 'un') === 'kg' ? 'selected' : '' ?>>kg</option>
+                                                        <option value="cx" <?= e($row['unidade_medida'] ?? 'un') === 'cx' ? 'selected' : '' ?>>cx</option>
+                                                    </select>
+                                                </label>
+                                                <label style="display:flex; align-items:center; gap:4px;">
+                                                    <input type="checkbox" name="requer_comprimento" value="1" <?= isset($row['requer_comprimento']) && (int)$row['requer_comprimento'] === 1 ? 'checked' : '' ?>>
+                                                    Requer comprimento
+                                                </label>
                                                 <label>Email<br><input type="email" name="notification_email" placeholder="destinatário" style="width:155px"></label>
                                                 <button type="submit">Salvar</button>
                                             </form>
@@ -514,6 +655,14 @@ function tabClass(string $tab): string
                         <?php endif; ?>
                     <?php endif; ?>
                 </section>
+            <?php elseif ($report === 'mailhog'): ?>
+                <section>
+                    <h2>MailHog</h2>
+                    <p>Visualize as mensagens de e-mail geradas pelo sistema diretamente dentro do site.</p>
+                    <div class="mailhog-frame-wrapper">
+                        <iframe class="mailhog-frame" src="<?= e($mailhogUrl) ?>" title="MailHog"></iframe>
+                    </div>
+                </section>
             <?php endif; ?>
         <?php endif; ?>
     </main>
@@ -524,7 +673,33 @@ function tabClass(string $tab): string
     <script>
         window.LOCALIDADE_HIERARCHY = <?= json_encode($localidadeHierarchy, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     </script>
+    <script>
+        window.INITIAL_ITEMS = <?= json_encode(array_map(function ($item) use ($app) {
+            return [
+                'value' => (int)$item['id_item'],
+                'text' => $item['item'],
+                'tokens' => $item['item'] . ($item['sinonimos'] ? ', ' . $item['sinonimos'] : ''),
+                'synonyms' => $item['sinonimos'] ?? '',
+                'stock' => $app->getStock((int)$item['id_item']),
+                'unidade' => $item['unidade_medida'] ?? 'un',
+                'requer_comprimento' => (int)($item['requer_comprimento'] ?? 0),
+            ];
+        }, $popularItems), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+        window.ITEMS = <?= json_encode(array_map(function ($item) use ($app) {
+            return [
+                'value' => (int)$item['id_item'],
+                'text' => $item['item'],
+                'tokens' => $item['item'] . ($item['sinonimos'] ? ', ' . $item['sinonimos'] : ''),
+                'synonyms' => $item['sinonimos'] ?? '',
+                'stock' => $app->getStock((int)$item['id_item']),
+                'unidade' => $item['unidade_medida'] ?? 'un',
+                'requer_comprimento' => (int)($item['requer_comprimento'] ?? 0),
+            ];
+        }, $items), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    <script src="form.js?v=8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js?v=1"></script>
+    <script src="form.js?v=9"></script>
 </body>
 </html>

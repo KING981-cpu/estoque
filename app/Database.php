@@ -69,8 +69,14 @@ SQL);
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS item (
             id_item INT PRIMARY KEY AUTO_INCREMENT,
             item VARCHAR(50) NOT NULL,
+            tipo_registro TINYINT(1) NOT NULL DEFAULT 1,
+            unidade_medida VARCHAR(10) NOT NULL DEFAULT \'un\',
+            saldo_atual INT NOT NULL DEFAULT 0,
             quantidade_minima INT NOT NULL DEFAULT 0,
-            quantidade_desejavel INT NOT NULL DEFAULT 0
+            quantidade_desejavel INT NOT NULL DEFAULT 0,
+            quantidade_sobra_compra INT NOT NULL DEFAULT 0,
+            sinonimos TEXT NOT NULL,
+            requer_comprimento TINYINT(1) NOT NULL DEFAULT 0
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
 
         $this->ensureItemSchema();
@@ -82,6 +88,9 @@ SQL);
             FOREIGN KEY (id_item) REFERENCES item(id_item)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
 
+        $this->ensureMovementSchema();
+        $this->synchronizeItemTipoRegistroWithMovements();
+
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS movimentacao (
             id_movimentacao INT PRIMARY KEY AUTO_INCREMENT,
             tipo ENUM(\'entrada\', \'saída\') NOT NULL,
@@ -89,7 +98,9 @@ SQL);
             quantidade INT NOT NULL,
             assinatura LONGTEXT NOT NULL,
             uso ENUM(\'Consumo\', \'Empréstimo\') NOT NULL,
+            tipo_registro TINYINT(1) NOT NULL DEFAULT 1,
             `observação` VARCHAR(200) NOT NULL,
+            patrimonio VARCHAR(255) NOT NULL DEFAULT \'\',
             id_funcionario INT,
             id_localidade INT,
             id_item INT,
@@ -106,6 +117,11 @@ SQL);
             return;
         }
 
+        $needsAlter = !isset($columns['quantidade_minima']) || !isset($columns['quantidade_desejavel']) || !isset($columns['quantidade_sobra_compra']) || !isset($columns['sinonimos']) || !isset($columns['tipo_registro']) || !isset($columns['unidade_medida']) || !isset($columns['saldo_atual']) || !isset($columns['requer_comprimento']);
+        if (!$needsAlter) {
+            return;
+        }
+
         $this->pdo->beginTransaction();
         try {
             if (!isset($columns['quantidade_minima'])) {
@@ -116,16 +132,90 @@ SQL);
                 $this->pdo->exec('ALTER TABLE item ADD COLUMN quantidade_desejavel INT NOT NULL DEFAULT 0');
             }
 
+            if (!isset($columns['quantidade_sobra_compra'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN quantidade_sobra_compra INT NOT NULL DEFAULT 0');
+            }
+
+            if (!isset($columns['sinonimos'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN sinonimos TEXT NOT NULL');
+            }
+
+            if (!isset($columns['tipo_registro'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN tipo_registro TINYINT(1) NOT NULL DEFAULT 1');
+            }
+
+            if (!isset($columns['unidade_medida'])) {
+                $this->pdo->exec("ALTER TABLE item ADD COLUMN unidade_medida VARCHAR(10) NOT NULL DEFAULT 'un'");
+            }
+
+            if (!isset($columns['saldo_atual'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN saldo_atual INT NOT NULL DEFAULT 0');
+            }
+
+            if (!isset($columns['requer_comprimento'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN requer_comprimento TINYINT(1) NOT NULL DEFAULT 0');
+            }
+
             $this->pdo->commit();
         } catch (\Throwable $exception) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             throw $exception;
+        }
+    }
+
+    private function ensureMovementSchema(): void
+    {
+        $columns = $this->getTableColumns('movimentacao');
+        if (empty($columns)) {
+            return;
+        }
+
+        if (!isset($columns['tipo_registro']) || !isset($columns['patrimonio']) || isset($columns['comprimento_movimentado'])) {
+            $this->pdo->beginTransaction();
+            try {
+                if (!isset($columns['tipo_registro'])) {
+                    $this->pdo->exec('ALTER TABLE movimentacao ADD COLUMN tipo_registro TINYINT(1) NOT NULL DEFAULT 1');
+                }
+                if (!isset($columns['patrimonio'])) {
+                    $this->pdo->exec('ALTER TABLE movimentacao ADD COLUMN patrimonio VARCHAR(255) NOT NULL DEFAULT ""');
+                }
+                if (isset($columns['comprimento_movimentado'])) {
+                    $this->pdo->exec('ALTER TABLE movimentacao DROP COLUMN comprimento_movimentado');
+                }
+                $this->pdo->commit();
+            } catch (\Throwable $exception) {
+                if ($this->pdo->inTransaction()) {
+                    $this->pdo->rollBack();
+                }
+                throw $exception;
+            }
         }
     }
 
     public function pdo(): \PDO
     {
         return $this->pdo;
+    }
+
+    private function synchronizeItemTipoRegistroWithMovements(): void
+    {
+        $this->pdo->exec(<<<'SQL'
+UPDATE item i
+JOIN (
+    SELECT first_item.id_item, m.tipo_registro
+    FROM (
+        SELECT id_item, MIN(id_movimentacao) AS first_mov
+        FROM movimentacao
+        GROUP BY id_item
+    ) AS first_item
+    JOIN movimentacao m ON m.id_item = first_item.id_item AND m.id_movimentacao = first_item.first_mov
+) AS first_mov ON first_mov.id_item = i.id_item
+SET i.tipo_registro = first_mov.tipo_registro
+WHERE i.tipo_registro <> first_mov.tipo_registro;
+SQL
+        );
     }
 
     private function ensureLocalidadeSchema(): void

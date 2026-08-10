@@ -15,15 +15,19 @@ CREATE TABLE IF NOT EXISTS localidade (
 
 CREATE TABLE IF NOT EXISTS item (
   id_item INT PRIMARY KEY AUTO_INCREMENT,
+  categoria VARCHAR(100) NOT NULL DEFAULT '',
   item VARCHAR(50) NOT NULL,
+  condicao ENUM('novo', 'usado') NOT NULL DEFAULT 'novo',
   tipo_registro TINYINT(1) NOT NULL DEFAULT 1,
+  tipo_item VARCHAR(20) NOT NULL DEFAULT 'temporario',
   unidade_medida VARCHAR(10) NOT NULL DEFAULT 'un',
   saldo_atual INT NOT NULL DEFAULT 0,
   quantidade_minima INT NOT NULL DEFAULT 0,
   quantidade_desejavel INT NOT NULL DEFAULT 0,
   quantidade_sobra_compra INT NOT NULL DEFAULT 0,
   sinonimos TEXT NOT NULL,
-  requer_comprimento TINYINT(1) NOT NULL DEFAULT 0
+  requer_comprimento TINYINT(1) NOT NULL DEFAULT 0,
+  UNIQUE KEY uniq_item_condicao (item, condicao)
 );
 
 CREATE TABLE IF NOT EXISTS item_notificacao_email (
@@ -42,6 +46,7 @@ CREATE TABLE IF NOT EXISTS movimentacao (
   uso ENUM('Consumo', 'Empréstimo') NOT NULL,
   tipo_registro TINYINT(1) NOT NULL DEFAULT 1,
   observação VARCHAR(200) NOT NULL,
+  condicao_item VARCHAR(50) NOT NULL DEFAULT '',
   patrimonio VARCHAR(255) NOT NULL DEFAULT '',
   id_funcionario INT,
   id_localidade INT,

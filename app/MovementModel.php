@@ -11,9 +11,9 @@ class MovementModel
         $this->pdo = $database->pdo();
     }
 
-    public function record(int $itemId, string $tipo, string $dataItem, int $quantidade, string $assinatura, string $uso, int $tipoRegistro, string $observacao, string $patrimonio, ?int $idFuncionario, ?int $idLocalidade): int
+    public function record(int $itemId, string $tipo, string $dataItem, int $quantidade, string $assinatura, string $uso, int $tipoRegistro, string $condicaoItem, string $observacao, string $patrimonio, ?int $idFuncionario, ?int $idLocalidade): int
     {
-        $statement = $this->pdo->prepare('INSERT INTO movimentacao (tipo, data_item, quantidade, assinatura, uso, tipo_registro, `observação`, patrimonio, id_funcionario, id_localidade, id_item) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $statement = $this->pdo->prepare('INSERT INTO movimentacao (tipo, data_item, quantidade, assinatura, uso, tipo_registro, condicao_item, `observação`, patrimonio, id_funcionario, id_localidade, id_item) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $statement->execute([
             $tipo,
             $dataItem,
@@ -21,6 +21,7 @@ class MovementModel
             $assinatura,
             $uso,
             $tipoRegistro,
+            $condicaoItem,
             $observacao,
             $patrimonio,
             $idFuncionario,
@@ -31,9 +32,9 @@ class MovementModel
         return (int)$this->pdo->lastInsertId();
     }
 
-    public function history(int $itemId = null, ?string $startDate = null, ?string $endDate = null): array
+    public function history(int $itemId = null, ?string $startDate = null, ?string $endDate = null, string $patrimonio = ''): array
     {
-        $query = 'SELECT m.id_movimentacao, m.tipo, m.data_item, m.quantidade, m.assinatura, m.uso, m.tipo_registro, m.`observação` AS observacao, m.patrimonio AS patrimonio, f.nome AS funcionario, CONCAT_WS(" > ", l.secretaria, l.divisao, l.setor) AS localidade, i.item AS item_name FROM movimentacao m LEFT JOIN funcionario f ON m.id_funcionario = f.id_funcionario LEFT JOIN localidade l ON m.id_localidade = l.id_localidade LEFT JOIN item i ON m.id_item = i.id_item WHERE 1=1';
+        $query = 'SELECT m.id_movimentacao, m.tipo, m.data_item, m.quantidade, m.assinatura, m.uso, m.tipo_registro, m.condicao_item AS condicao_item, m.`observação` AS observacao, m.patrimonio AS patrimonio, f.nome AS funcionario, CONCAT_WS(" > ", l.secretaria, l.divisao, NULLIF(l.setor, "")) AS localidade, i.item AS item_name FROM movimentacao m LEFT JOIN funcionario f ON m.id_funcionario = f.id_funcionario LEFT JOIN localidade l ON m.id_localidade = l.id_localidade LEFT JOIN item i ON m.id_item = i.id_item WHERE 1=1';
 
         $params = [];
         if ($itemId !== null) {
@@ -51,6 +52,11 @@ class MovementModel
             $params[] = $endDate;
         }
 
+        if ($patrimonio !== '') {
+            $query .= ' AND m.patrimonio LIKE ?';
+            $params[] = '%' . $patrimonio . '%';
+        }
+
         $query .= ' ORDER BY m.data_item DESC, m.id_movimentacao DESC';
         $statement = $this->pdo->prepare($query);
         $statement->execute($params);
@@ -59,7 +65,7 @@ class MovementModel
 
     public function movementReport(int $itemId = null, ?int $tipoRegistro = 1, ?string $startDate = null, ?string $endDate = null): array
     {
-        $query = 'SELECT m.id_movimentacao, m.tipo, m.data_item, m.quantidade, m.assinatura, m.uso, m.tipo_registro, m.`observação` AS observacao, m.patrimonio AS patrimonio, f.nome AS funcionario, CONCAT_WS(" > ", l.secretaria, l.divisao, l.setor) AS localidade, i.item AS item_name FROM movimentacao m LEFT JOIN funcionario f ON m.id_funcionario = f.id_funcionario LEFT JOIN localidade l ON m.id_localidade = l.id_localidade LEFT JOIN item i ON m.id_item = i.id_item WHERE 1=1';
+        $query = 'SELECT m.id_movimentacao, m.tipo, m.data_item, m.quantidade, m.assinatura, m.uso, m.tipo_registro, m.condicao_item AS condicao_item, m.`observação` AS observacao, m.patrimonio AS patrimonio, f.nome AS funcionario, CONCAT_WS(" > ", l.secretaria, l.divisao, NULLIF(l.setor, "")) AS localidade, i.item AS item_name FROM movimentacao m LEFT JOIN funcionario f ON m.id_funcionario = f.id_funcionario LEFT JOIN localidade l ON m.id_localidade = l.id_localidade LEFT JOIN item i ON m.id_item = i.id_item WHERE 1=1';
 
         $params = [];
         if ($tipoRegistro === 0 || $tipoRegistro === 1) {

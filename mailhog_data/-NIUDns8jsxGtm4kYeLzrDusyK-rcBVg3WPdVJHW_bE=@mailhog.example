@@ -1,0 +1,14 @@
+HELO:<f0da0f142fcf>
+FROM:<alertas@olimpia.sp.gov.br>
+TO:<kaua.ferri@olimpia.sp.gov.br>
+
+From: alertas@olimpia.sp.gov.br
+To: kaua.ferri@olimpia.sp.gov.br
+Subject: Alerta: estoque atingiu nível desejável: Monitor 27 polegadas
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+O item 'Monitor 27 polegadas' atingiu o nível desejável.
+
+Quantidade atual: 8
+Quantidade desejável: 9

@@ -32,11 +32,6 @@ function csvEscape(string $value): string
     return '"' . $escaped . '"';
 }
 
-bold_font_name = 'Helvetica-Bold'
-bold_font_candidates = [
-story.append(Paragraph(payload['title'], styles['title']))
-story.append(Paragraph(payload['subtitle'], styles['subtitle']))
-story.append(Spacer(1, 0.12 * inch))
 function pdfEscapeText(string $value): string
 {
     $text = trim((string)$value);
@@ -87,10 +82,10 @@ function buildPdfReport(array $movements, ?string $errorMessage = null): string
 
     $objectId = 6;
     $columnSpecs = [
-        ['title' => 'ID', 'width' => 30, 'length' => 5],
-        ['title' => 'Data', 'width' => 46, 'length' => 10],
-        ['title' => 'Tipo', 'width' => 42, 'length' => 8],
-        ['title' => 'Item', 'width' => 120, 'length' => 20],
+        ['title' => 'Data', 'width' => 60, 'length' => 10],
+        ['title' => 'Tipo', 'width' => 46, 'length' => 8],
+        ['title' => 'Item', 'width' => 140, 'length' => 25],
+        ['title' => 'Condição', 'width' => 60, 'length' => 12],
         ['title' => 'Qtd', 'width' => 28, 'length' => 6],
         ['title' => 'Uso', 'width' => 44, 'length' => 8],
         ['title' => 'Funcionário', 'width' => 78, 'length' => 12],
@@ -114,7 +109,7 @@ function buildPdfReport(array $movements, ?string $errorMessage = null): string
 
         $x = $marginX;
         foreach ($columnSpecs as $index => $columnSpec) {
-            $cellText = $index === 0 ? 'ID' : $columnSpec['title'];
+            $cellText = $columnSpec['title'];
             $contentParts[] = "BT /F2 6.5 Tf $x " . ($y - 9) . " Td (" . pdfEscapeText($cellText) . ") Tj ET";
             $x += $columnSpec['width'];
         }
@@ -134,10 +129,10 @@ function buildPdfReport(array $movements, ?string $errorMessage = null): string
                 $contentParts[] = "$marginX " . ($y - $rowHeight) . " " . ($pageWidth - (2 * $marginX)) . " $rowHeight re S";
 
                 $values = [
-                    (string)($row['id_movimentacao'] ?? ''),
                     (string)($row['data_item'] ?? ''),
                     (string)($row['tipo'] ?? ''),
                     (string)($row['item_name'] ?? ''),
+                    (string)($row['condicao_item'] ?? ''),
                     (string)($row['quantidade'] ?? ''),
                     (string)($row['uso'] ?? ''),
                     (string)($row['funcionario'] ?? ''),
@@ -200,15 +195,15 @@ header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 echo "\xEF\xBB\xBF";
 
-$columns = ['ID', 'Data', 'Tipo', 'Item', 'Quantidade', 'Uso', 'Funcionário', 'Localidade', 'Patrimônio'];
+ $columns = ['Data', 'Tipo', 'Item', 'Condição', 'Quantidade', 'Uso', 'Funcionário', 'Localidade', 'Patrimônio'];
 echo implode(';', array_map('csvEscape', $columns)) . "\r\n";
 
 foreach ($movements as $movimento) {
     $row = [
-        $movimento['id_movimentacao'] ?? '',
         $movimento['data_item'] ?? '',
         $movimento['tipo'] ?? '',
         $movimento['item_name'] ?? '',
+        $movimento['condicao_item'] ?? '',
         $movimento['quantidade'] ?? '',
         $movimento['uso'] ?? '',
         $movimento['funcionario'] ?? '',

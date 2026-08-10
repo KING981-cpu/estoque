@@ -1,0 +1,14 @@
+HELO:<d6f23063eadc>
+FROM:<alerta@estoque.local>
+TO:<kaua.ferri@olimpia.sp.gov.br>
+
+From: alerta@estoque.local
+To: kaua.ferri@olimpia.sp.gov.br
+Subject: Alerta crítico: item esgotado: Monitor 26 polegadas
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+O item 'Monitor 26 polegadas' está esgotado.
+
+Quantidade atual: 0
+Por favor, providencie reposição imediata.

@@ -1,0 +1,11 @@
+HELO:<f0da0f142fcf>
+FROM:<alertas@olimpia.sp.gov.br>
+TO:<kaua.ferri@olimpia.sp.gov.br>
+
+From: alertas@olimpia.sp.gov.br
+To: kaua.ferri@olimpia.sp.gov.br
+Subject: Teste SMTP corporativo
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Corpo do teste enviado com o SMTP corporativo.

@@ -10,13 +10,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const localidadeDivisao = document.getElementById('localidade_divisao');
     const localidadeSetor = document.getElementById('localidade_setor');
     const localidadePathInput = document.getElementById('localidade_path');
+    const addItemTipoField = document.getElementById('add-item-tipo_registro');
+    const addItemConditionSelect = document.getElementById('add-item-condicao');
     const localidadeHierarchy = window.LOCALIDADE_HIERARCHY || [];
 
     function normalizeText(value) {
         return String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
     }
 
-    const NO_SETOR_VALUE = 'Sem setor disponível';
+    const NO_SETOR_VALUE = '';
 
     function setHiddenLocalidadePath() {
         const secretaria = localidadeSecretaria?.value || '';
@@ -75,9 +77,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (setores.length === 0) {
             localidadeSetor.disabled = true;
-            localidadeSetor.appendChild(createOption(NO_SETOR_VALUE, NO_SETOR_VALUE));
-            localidadeSetor.value = NO_SETOR_VALUE;
-            localidadePathInput.value = `${secretariaData.secretaria} > ${divisaoData.name} > ${NO_SETOR_VALUE}`;
+            setSelectOptions(localidadeSetor, [], 'Selecione o setor');
+            setHiddenLocalidadePath();
             return;
         }
 
@@ -127,21 +128,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const tipoValue = normalizeText(tipoField?.value);
         const usoValue = normalizeText(usoField?.value);
         const isEmprestimo = tipoValue === 'saida' && usoValue === 'emprestimo';
-        const showItemCondition = usoValue === 'emprestimo';
 
         if (funcionarioBlock) {
             funcionarioBlock.classList.toggle('hidden', !isEmprestimo);
             funcionarioBlock.style.display = isEmprestimo ? 'block' : 'none';
         }
         if (itemConditionBlock) {
-            itemConditionBlock.classList.toggle('hidden', !showItemCondition);
-            itemConditionBlock.style.display = showItemCondition ? 'block' : 'none';
+            itemConditionBlock.classList.remove('hidden');
+            itemConditionBlock.style.display = 'block';
             const conditionSelect = itemConditionBlock.querySelector('select[name="condicao_item"]');
             if (conditionSelect) {
-                conditionSelect.required = showItemCondition;
-                if (!showItemCondition) {
-                    conditionSelect.value = '';
-                }
+                conditionSelect.required = false;
             }
         }
         if (localidadeBlock) {
@@ -174,6 +171,90 @@ document.addEventListener('DOMContentLoaded', function () {
         if (observacaoInput) {
             observacaoInput.required = isEmprestimo;
         }
+
+        updateAddItemConditionField();
+        updatePatrimonioRequirement();
+    }
+
+    function updateAddItemConditionField() {
+        const addItemTipo = document.getElementById('add-item-tipo_registro');
+        const addItemConditionBlock = document.getElementById('field-add-item-condicao');
+        const addItemConditionSelect = document.getElementById('add-item-condicao');
+        if (!addItemTipo || !addItemConditionBlock || !addItemConditionSelect) {
+            return;
+        }
+
+        const isExistente = normalizeText(addItemTipo.value) === '0' || normalizeText(addItemTipo.value) === 'existente';
+        addItemConditionBlock.style.display = isExistente ? 'block' : 'none';
+        addItemConditionSelect.required = isExistente;
+        if (!isExistente) {
+            addItemConditionSelect.value = 'novo';
+        }
+    }
+
+    function updatePatrimonioRequirement() {
+        const patrimonioInput = document.querySelector('input[name="patrimonio"]');
+        const localItemSelect = document.getElementById('item_search') || (typeof itemSelect !== 'undefined' ? itemSelect : null);
+        if (!patrimonioInput || !localItemSelect) return;
+
+        const selectedOption = localItemSelect.selectedOptions ? localItemSelect.selectedOptions[0] : null;
+        const tipoItem = selectedOption ? (selectedOption.dataset.tipoItem || selectedOption.getAttribute('data-tipo_item') || '') : '';
+        const tipoRegistro = selectedOption ? (selectedOption.dataset.tipoRegistro || selectedOption.getAttribute('data-tipo_registro')) : null;
+        const isPermanent = String(tipoItem).toLowerCase() === 'permanente' || String(tipoRegistro) === '1' || Number(tipoRegistro) === 1;
+        patrimonioInput.required = isPermanent;
+        if (!isPermanent) {
+            patrimonioInput.classList.remove('required');
+        }
+    }
+
+    function updateQuantityConstraint() {
+        const quantityInput = document.querySelector('input[name="quantidade"]');
+        const localItemSelect = document.getElementById('item_search') || (typeof itemSelect !== 'undefined' ? itemSelect : null);
+        if (!quantityInput || !localItemSelect) {
+            return;
+        }
+
+        const selectedOption = localItemSelect.selectedOptions ? localItemSelect.selectedOptions[0] : null;
+        const tipoItem = selectedOption ? (selectedOption.dataset.tipoItem || selectedOption.getAttribute('data-tipo_item') || '') : '';
+        const tipoRegistro = selectedOption ? (selectedOption.dataset.tipoRegistro || selectedOption.getAttribute('data-tipo_registro')) : null;
+        const isPermanent = String(tipoItem).toLowerCase() === 'permanente' || String(tipoRegistro) === '1' || Number(tipoRegistro) === 1;
+
+        if (isPermanent) {
+            quantityInput.setAttribute('max', '1');
+            quantityInput.setAttribute('min', '1');
+            if (Number(quantityInput.value) !== 1) {
+                quantityInput.value = '1';
+            }
+        } else {
+            quantityInput.removeAttribute('max');
+            quantityInput.setAttribute('min', '1');
+        }
+    }
+
+    function validatePermanentQuantity(event) {
+        const quantityInput = document.querySelector('input[name="quantidade"]');
+        const localItemSelect = document.getElementById('item_search') || (typeof itemSelect !== 'undefined' ? itemSelect : null);
+        if (!quantityInput || !localItemSelect) {
+            return false;
+        }
+
+        const selectedOption = localItemSelect.selectedOptions ? localItemSelect.selectedOptions[0] : null;
+        const tipoItem = selectedOption ? (selectedOption.dataset.tipoItem || selectedOption.getAttribute('data-tipo_item') || '') : '';
+        const tipoRegistro = selectedOption ? (selectedOption.dataset.tipoRegistro || selectedOption.getAttribute('data-tipo_registro')) : null;
+        const isPermanent = String(tipoItem).toLowerCase() === 'permanente' || String(tipoRegistro) === '1' || Number(tipoRegistro) === 1;
+
+        if (isPermanent && Number(quantityInput.value) !== 1) {
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+            showQuantidadeErro('Para itens permanentes, a quantidade deve ser igual a 1.');
+            return true;
+        }
+
+        if (quantidadeErro) {
+            quantidadeErro.style.display = 'none';
+        }
+        return false;
     }
 
     if (localidadeSecretaria) {
@@ -209,8 +290,140 @@ document.addEventListener('DOMContentLoaded', function () {
         tipoField.addEventListener('input', updateFormFields);
     }
 
+    if (addItemTipoField) {
+        addItemTipoField.addEventListener('change', updateAddItemConditionField);
+    }
+
+    const itemCategorySelect = document.getElementById('item_category');
+    const itemSelect = document.getElementById('item_search');
+    const quantityInput = document.querySelector('input[name="quantidade"]');
+    let itemTomSelect = null;
+
+    function setItemSelectDisabled(state) {
+        if (itemSelect) {
+            itemSelect.disabled = state;
+        }
+        if (itemTomSelect) {
+            if (state && typeof itemTomSelect.disable === 'function') {
+                itemTomSelect.disable();
+            }
+            if (!state && typeof itemTomSelect.enable === 'function') {
+                itemTomSelect.enable();
+            }
+        }
+    }
+
+    function clearItemOptions() {
+        if (!itemSelect) return;
+        if (itemTomSelect && typeof itemTomSelect.clearOptions === 'function') {
+            itemTomSelect.clearOptions();
+            if (typeof itemTomSelect.clear === 'function') {
+                itemTomSelect.clear(true);
+            }
+        }
+        itemSelect.innerHTML = '';
+        const placeholder = itemCategorySelect && itemCategorySelect.value ? 'Selecione o item' : 'Selecione a categoria primeiro';
+        const option = document.createElement('option');
+        option.value = '';
+        option.disabled = true;
+        option.selected = true;
+        option.textContent = placeholder;
+        itemSelect.appendChild(option);
+    }
+
+    function populateItemsByCategory(category) {
+        if (!itemSelect || !Array.isArray(window.ITEMS)) return [];
+        const filteredItems = window.ITEMS.filter(function (item) {
+            return normalizeText(item.category) === normalizeText(category);
+        });
+
+        // Update native select placeholder/options when TomSelect is not available
+        itemSelect.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        placeholder.textContent = filteredItems.length ? 'Selecione o item' : 'Nenhum item disponível nesta categoria';
+        itemSelect.appendChild(placeholder);
+
+        if (!itemTomSelect) {
+            filteredItems.forEach(function (item) {
+                const option = document.createElement('option');
+                option.value = String(item.value);
+                option.textContent = item.text;
+                option.dataset.tokens = item.tokens;
+                option.dataset.stock = item.stock;
+                option.dataset.tipo_registro = item.tipo_registro;
+                option.dataset.tipo_item = item.tipo_item;
+                option.dataset.unidade = item.unidade;
+                option.dataset.requer_comprimento = item.requer_comprimento;
+                option.dataset.condicao = item.condicao;
+                itemSelect.appendChild(option);
+            });
+            return filteredItems;
+        }
+
+        // TomSelect path: refresh internal options and return list
+        if (typeof itemTomSelect.clearOptions === 'function') {
+            itemTomSelect.clearOptions();
+        }
+        if (filteredItems.length > 0 && typeof itemTomSelect.addOption === 'function') {
+            itemTomSelect.addOption(filteredItems);
+        }
+        if (typeof itemTomSelect.refreshOptions === 'function') {
+            itemTomSelect.refreshOptions(false);
+        }
+        return filteredItems;
+    }
+
+    function handleCategoryChange() {
+        if (!itemCategorySelect) return;
+        const category = itemCategorySelect.value;
+        clearItemOptions();
+        setItemSelectDisabled(!category);
+        if (category) {
+            const filtered = populateItemsByCategory(category);
+            // If TomSelect is present, reset selection and open dropdown so user sees available items immediately
+            if (itemTomSelect && typeof itemTomSelect.setValue === 'function') {
+                try {
+                    itemTomSelect.setValue('');
+                } catch (e) {
+                    // ignore
+                }
+            }
+            if (itemTomSelect && filtered && filtered.length > 0 && typeof itemTomSelect.open === 'function') {
+                itemTomSelect.open();
+            }
+        }
+    }
+
+    if (itemCategorySelect) {
+        clearItemOptions();
+        setItemSelectDisabled(true);
+
+        itemCategorySelect.addEventListener('change', function () {
+            handleCategoryChange();
+            updatePatrimonioRequirement();
+        });
+
+        if (itemCategorySelect.value) {
+            handleCategoryChange();
+        }
+
+        // Ensure TomSelect options stay in sync with category changes.
+        if (itemTomSelect && typeof itemTomSelect.refreshOptions === 'function') {
+            itemTomSelect.refreshOptions(false);
+        }
+    }
+
     updateFormFields();
-    setTimeout(updateFormFields, 100);
+    updateAddItemConditionField();
+    updateQuantityConstraint();
+    setTimeout(function () {
+        updateFormFields();
+        updateAddItemConditionField();
+        updateQuantityConstraint();
+    }, 100);
 
     const signatureCanvas = document.getElementById('signature-pad');
     const assinaturaInput = document.getElementById('assinatura_data');
@@ -409,34 +622,120 @@ document.addEventListener('DOMContentLoaded', function () {
         return false;
     }
 
-    if (signatureCanvas && window.SignaturePad) {
-        signaturePad = new SignaturePad(signatureCanvas, {
-            backgroundColor: 'rgb(255, 255, 255)',
-            penColor: 'rgb(0, 0, 0)'
-        });
-
-        function resizeSignatureCanvas() {
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
-            const rect = signatureCanvas.getBoundingClientRect();
-            signatureCanvas.width = rect.width * ratio;
-            signatureCanvas.height = rect.height * ratio;
-            signatureCanvas.getContext('2d').scale(ratio, ratio);
-            signaturePad.clear();
-        }
-
-        window.addEventListener('resize', resizeSignatureCanvas);
-        resizeSignatureCanvas();
-
-        if (clearButton) {
-            clearButton.addEventListener('click', function () {
-                signaturePad.clear();
-                if (assinaturaInput) {
-                    assinaturaInput.value = '';
-                }
+    if (signatureCanvas) {
+        if (window.SignaturePad) {
+            signaturePad = new SignaturePad(signatureCanvas, {
+                backgroundColor: 'rgb(255, 255, 255)',
+                penColor: 'rgb(0, 0, 0)'
             });
-        }
 
-        window.signaturePad = signaturePad;
+            function resizeSignatureCanvas() {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                const rect = signatureCanvas.getBoundingClientRect();
+                signatureCanvas.width = rect.width * ratio;
+                signatureCanvas.height = rect.height * ratio;
+                signatureCanvas.getContext('2d').scale(ratio, ratio);
+                signaturePad.clear();
+            }
+
+            window.addEventListener('resize', resizeSignatureCanvas);
+            resizeSignatureCanvas();
+
+            if (clearButton) {
+                clearButton.addEventListener('click', function () {
+                    signaturePad.clear();
+                    if (assinaturaInput) {
+                        assinaturaInput.value = '';
+                    }
+                });
+            }
+
+            window.signaturePad = signaturePad;
+        } else {
+            // Fallback simple drawer when SignaturePad lib is not available
+            const ctx = signatureCanvas.getContext('2d');
+            let drawing = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            function resizeCanvasFallback() {
+                const rect = signatureCanvas.getBoundingClientRect();
+                signatureCanvas.width = rect.width;
+                signatureCanvas.height = rect.height;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+            }
+
+            function pointerDown(e) {
+                drawing = true;
+                const rect = signatureCanvas.getBoundingClientRect();
+                lastX = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+                lastY = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+            }
+
+            function pointerMove(e) {
+                if (!drawing) return;
+                const rect = signatureCanvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+                const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                lastX = x;
+                lastY = y;
+            }
+
+            function pointerUp() {
+                drawing = false;
+            }
+
+            resizeCanvasFallback();
+            window.addEventListener('resize', resizeCanvasFallback);
+
+            signatureCanvas.addEventListener('pointerdown', pointerDown);
+            signatureCanvas.addEventListener('pointermove', pointerMove);
+            window.addEventListener('pointerup', pointerUp);
+            // touch support
+            signatureCanvas.addEventListener('touchstart', pointerDown);
+            signatureCanvas.addEventListener('touchmove', pointerMove);
+            window.addEventListener('touchend', pointerUp);
+
+            const fallbackPad = {
+                isEmpty: function () {
+                    // simple check: compare to blank white canvas
+                    const blank = document.createElement('canvas');
+                    blank.width = signatureCanvas.width;
+                    blank.height = signatureCanvas.height;
+                    const bctx = blank.getContext('2d');
+                    bctx.fillStyle = '#ffffff';
+                    bctx.fillRect(0, 0, blank.width, blank.height);
+                    return signatureCanvas.toDataURL() === blank.toDataURL();
+                },
+                toDataURL: function () {
+                    return signatureCanvas.toDataURL('image/png');
+                },
+                clear: function () {
+                    ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+                }
+            };
+
+            if (clearButton) {
+                clearButton.addEventListener('click', function () {
+                    fallbackPad.clear();
+                    if (assinaturaInput) assinaturaInput.value = '';
+                });
+            }
+
+            signaturePad = fallbackPad;
+            window.signaturePad = signaturePad;
+        }
     }
 
     if (undoButton) {
@@ -462,28 +761,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            if (validatePermanentQuantity(event)) {
+                return;
+            }
+
             event.preventDefault();
             resetUndoInterface();
             startUndoCountdown();
         });
     }
 
-    const itemSelect = document.getElementById('item_search');
-    const quantityInput = document.querySelector('input[name="quantidade"]');
-    let itemTomSelect = null;
-
+    
     if (itemSelect) {
         itemSelect.addEventListener('change', function () {
             updateSaldoDisponivel();
+            updatePatrimonioRequirement();
+            updateQuantityConstraint();
             if (quantidadeErro) {
                 quantidadeErro.style.display = 'none';
             }
         });
     }
 
+
     if (quantityInput) {
         quantityInput.addEventListener('input', function () {
             validateQuantityAgainstStock();
+            validatePermanentQuantity();
         });
     }
 
@@ -493,7 +797,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    updateSaldoDisponivel();
+    updateFormulario();
+
+    function updateFormulario() {
+        updateFormFields();
+        updateSaldoDisponivel();
+    }
 
     function getSelectedItemStock() {
         if (!itemSelect || !itemSelect.value) {
@@ -514,10 +823,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 placeholder: 'Pesquisar item...',
                 allowEmptyOption: true,
                 openOnFocus: false,
+                openOnFocus: true,
                 closeAfterSelect: true,
                 hideSelected: true,
                 create: false,
-                options: Array.isArray(window.INITIAL_ITEMS) ? window.INITIAL_ITEMS : [],
+                options: [],
                 itemClass: 'ts-single-selected',
                 render: {
                     option: function(data, escape) {
@@ -528,16 +838,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 },
                 onItemAdd: function(value) {
-                    if (!itemSelect || !value) {
+                    if (!itemSelect || value == null || value === '') {
                         return;
                     }
 
-                    let existingOption = itemSelect.querySelector('option[value="' + value.replace(/"/g, '\\"') + '"]');
+                    const valueString = String(value);
+                    let existingOption = itemSelect.querySelector('option[value="' + valueString.replace(/"/g, '\\"') + '"]');
                     if (!existingOption) {
                         existingOption = document.createElement('option');
-                        existingOption.value = value;
-                        existingOption.textContent = (this.options[value] && this.options[value].text) ? this.options[value].text : value;
-                        const data = this.options[value] || {};
+                        existingOption.value = valueString;
+                        existingOption.textContent = (this.options[valueString] && this.options[valueString].text) ? this.options[valueString].text : valueString;
+                        const data = this.options[valueString] || {};
                         existingOption.dataset.stock = data.stock || '0';
                         existingOption.dataset.unidade = data.unidade || 'un';
                         existingOption.dataset.requerComprimento = String(data.requer_comprimento || data.requerComprimento || 0);
@@ -563,13 +874,31 @@ document.addEventListener('DOMContentLoaded', function () {
                         itemSelect.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 },
+                    onFocus: function() {
+                    if (itemTomSelect && itemCategorySelect && itemCategorySelect.value) {
+                        itemTomSelect.clearOptions();
+                        const filtered = window.ITEMS.filter(function(row) {
+                            return normalizeText(row.category) === normalizeText(itemCategorySelect.value);
+                        });
+                        if (typeof itemTomSelect.addOption === 'function') {
+                            itemTomSelect.addOption(filtered);
+                        }
+                        if (typeof itemTomSelect.refreshOptions === 'function') {
+                            itemTomSelect.refreshOptions(false);
+                        }
+                        if (typeof itemTomSelect.open === 'function') {
+                            itemTomSelect.open();
+                        }
+                    }
+                },
                 load: function(query, callback) {
-                    if (!query.length) {
+                    if (!itemCategorySelect || !itemCategorySelect.value) {
                         return callback();
                     }
-                    const search = query.toLowerCase();
+                    const search = String(query || '').toLowerCase();
                     const filtered = window.ITEMS.filter(function(row) {
-                        return row.text.toLowerCase().includes(search) || row.tokens.toLowerCase().includes(search);
+                        return normalizeText(row.category) === normalizeText(itemCategorySelect.value)
+                            && (!search.length || row.text.toLowerCase().includes(search) || row.tokens.toLowerCase().includes(search));
                     });
                     callback(filtered.slice(0, 30));
                 }

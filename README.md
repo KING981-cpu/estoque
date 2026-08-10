@@ -44,9 +44,12 @@ Ele resolve a falta de um controle centralizado de estoque, substituindo process
 - assinatura digital em canvas para cada movimentação
 
 ### Itens temporários vs permanentes
-- suporte a `tipo_registro`:
-  - `0` → `Saldo de transição` (temporário)
-  - `1` → `Carga permanente`
+- cadastro explícito por classificação:
+  - `item temporário`
+  - `item permanente`
+- itens permanentes exigem patrimônio na entrada da movimentação
+- itens temporários não exigem patrimônio
+- a classificação é persistida em `item.tipo_item` e também alimenta o campo legado `item.tipo_registro` para manter compatibilidade com relatórios e filtros
 - itens temporários:
   - aparecem na tela de `Histórico`
   - compõem o saldo atual em exibição
@@ -159,6 +162,16 @@ Configure os valores de conexão do banco:
 - `DB_NAME`
 - `DB_USER`
 - `DB_PASS`
+
+Para desenvolvimento local com MailHog, configure também:
+
+- `SMTP_HOST=mailhog`
+- `SMTP_PORT=1025`
+- `SMTP_MONITOR_HOST=mailhog`
+- `SMTP_MONITOR_PORT=1025`
+- `SMTP_FROM_EMAIL=alerta@olimpia.sp.gov.br`
+
+O carregamento do `.env` preserva variáveis já definidas no ambiente, permitindo que o Docker Compose substitua configurações quando necessário.
 
 ## Documentação adicional
 

@@ -1,0 +1,11 @@
+HELO:<eff85fa85376>
+FROM:<alertas@olimpia.sp.gov.br>
+TO:<kaua.ferri@olimpia.sp.gov.br>
+
+From: alertas@olimpia.sp.gov.br
+To: kaua.ferri@olimpia.sp.gov.br
+Subject: Teste SMTP direto
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Corpo do teste enviado agora para o endereço correto.

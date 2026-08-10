@@ -4,7 +4,7 @@ require_once __DIR__ . '/Database.php';
 
 class LocalidadeModel
 {
-    private const NO_SETOR = 'Sem setor disponível';
+    private const NO_SETOR = '';
     private \PDO $pdo;
 
     public function __construct(Database $database)

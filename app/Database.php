@@ -66,18 +66,24 @@ SQL);
 
         $this->ensureLocalidadeSchema();
 
-        $this->pdo->exec('CREATE TABLE IF NOT EXISTS item (
-            id_item INT PRIMARY KEY AUTO_INCREMENT,
-            item VARCHAR(50) NOT NULL,
-            tipo_registro TINYINT(1) NOT NULL DEFAULT 1,
-            unidade_medida VARCHAR(10) NOT NULL DEFAULT \'un\',
-            saldo_atual INT NOT NULL DEFAULT 0,
-            quantidade_minima INT NOT NULL DEFAULT 0,
-            quantidade_desejavel INT NOT NULL DEFAULT 0,
-            quantidade_sobra_compra INT NOT NULL DEFAULT 0,
-            sinonimos TEXT NOT NULL,
-            requer_comprimento TINYINT(1) NOT NULL DEFAULT 0
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+        $this->pdo->exec(<<<'SQL'
+CREATE TABLE IF NOT EXISTS item (
+    id_item INT PRIMARY KEY AUTO_INCREMENT,
+    categoria VARCHAR(100) NOT NULL DEFAULT '',
+    item VARCHAR(50) NOT NULL,
+    condicao ENUM('novo', 'usado') NOT NULL DEFAULT 'novo',
+    tipo_registro TINYINT(1) NOT NULL DEFAULT 1,
+    tipo_item VARCHAR(20) NOT NULL DEFAULT 'temporario',
+    unidade_medida VARCHAR(10) NOT NULL DEFAULT 'un',
+    saldo_atual INT NOT NULL DEFAULT 0,
+    quantidade_minima INT NOT NULL DEFAULT 0,
+    quantidade_sobra_compra INT NOT NULL DEFAULT 0,
+    sinonimos TEXT NOT NULL,
+    requer_comprimento TINYINT(1) NOT NULL DEFAULT 0,
+    UNIQUE KEY uniq_item_condicao (item, condicao)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+SQL
+        );
 
         $this->ensureItemSchema();
 
@@ -117,7 +123,7 @@ SQL);
             return;
         }
 
-        $needsAlter = !isset($columns['quantidade_minima']) || !isset($columns['quantidade_desejavel']) || !isset($columns['quantidade_sobra_compra']) || !isset($columns['sinonimos']) || !isset($columns['tipo_registro']) || !isset($columns['unidade_medida']) || !isset($columns['saldo_atual']) || !isset($columns['requer_comprimento']);
+        $needsAlter = !isset($columns['quantidade_minima']) || !isset($columns['quantidade_desejavel']) || !isset($columns['quantidade_sobra_compra']) || !isset($columns['sinonimos']) || !isset($columns['tipo_registro']) || !isset($columns['tipo_item']) || !isset($columns['unidade_medida']) || !isset($columns['saldo_atual']) || !isset($columns['requer_comprimento']) || !isset($columns['categoria']) || !isset($columns['condicao']);
         if (!$needsAlter) {
             return;
         }
@@ -143,6 +149,15 @@ SQL);
             if (!isset($columns['tipo_registro'])) {
                 $this->pdo->exec('ALTER TABLE item ADD COLUMN tipo_registro TINYINT(1) NOT NULL DEFAULT 1');
             }
+            if (!isset($columns['tipo_item'])) {
+                $this->pdo->exec("ALTER TABLE item ADD COLUMN tipo_item VARCHAR(20) NOT NULL DEFAULT 'temporario'");
+            }
+            if (!isset($columns['condicao'])) {
+                $this->pdo->exec("ALTER TABLE item ADD COLUMN condicao ENUM('novo','usado') NOT NULL DEFAULT 'novo'");
+            }
+            if (!isset($columns['categoria'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN categoria VARCHAR(100) NOT NULL DEFAULT ""');
+            }
 
             if (!isset($columns['unidade_medida'])) {
                 $this->pdo->exec("ALTER TABLE item ADD COLUMN unidade_medida VARCHAR(10) NOT NULL DEFAULT 'un'");
@@ -154,6 +169,18 @@ SQL);
 
             if (!isset($columns['requer_comprimento'])) {
                 $this->pdo->exec('ALTER TABLE item ADD COLUMN requer_comprimento TINYINT(1) NOT NULL DEFAULT 0');
+            }
+
+            if ($this->hasItemColumn('categoria')) {
+                $this->pdo->exec("UPDATE item SET categoria = 'Sem categoria' WHERE categoria = ''");
+            }
+
+            if ($this->hasItemColumn('condicao')) {
+                $this->pdo->exec("UPDATE item SET condicao = 'novo' WHERE condicao = '' OR condicao IS NULL");
+            }
+
+            if ($this->hasItemColumn('tipo_item')) {
+                $this->pdo->exec("UPDATE item SET tipo_item = CASE WHEN COALESCE(tipo_registro, 1) = 1 THEN 'permanente' ELSE 'temporario' END WHERE tipo_item IS NULL OR tipo_item = ''");
             }
 
             $this->pdo->commit();

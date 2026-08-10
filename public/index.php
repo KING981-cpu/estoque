@@ -16,13 +16,17 @@ $action = $_POST['action'] ?? null;
 
 try {
     if ($action === 'add_item') {
+        $category = trim($_POST['categoria'] ?? '');
         $itemName = trim($_POST['item_name'] ?? '');
+        $condition = trim($_POST['condicao'] ?? 'novo');
+        if (!in_array($condition, ['novo', 'usado'], true)) {
+            $condition = 'novo';
+        }
         $quantity = isset($_POST['item_quantity']) ? (int)$_POST['item_quantity'] : 0;
-        $tipoRegistro = isset($_POST['tipo_registro']) ? (int)$_POST['tipo_registro'] : 0;
+        $tipoRegistro = isset($_POST['tipo_registro']) ? (int)$_POST['tipo_registro'] : 1;
+        $tipoItem = trim($_POST['tipo_item'] ?? 'temporario');
         $synonyms = trim($_POST['sinonimos'] ?? '');
-        $unidadeMedida = trim($_POST['unidade_medida'] ?? 'un');
-        $requerComprimento = !empty($_POST['requer_comprimento']) ? 1 : 0;
-        $itemId = $app->addItem($itemName, $quantity, $tipoRegistro, $synonyms, $unidadeMedida, $requerComprimento);
+        $itemId = $app->addItem($category, $itemName, $condition, $quantity, $tipoRegistro, $synonyms, $tipoItem);
         $alert = 'Item registrado com sucesso.';
         if ($quantity > 0) {
             $alert = 'Item registrado com quantidade inicial de ' . $quantity . '.';
@@ -39,10 +43,13 @@ try {
             'quantidade' => (int)($_POST['quantidade'] ?? 0),
             'assinatura_data' => trim($_POST['assinatura_data'] ?? ''),
             'uso' => $_POST['uso'] ?? 'Consumo',
-            'tipo_registro' => isset($_POST['tipo_registro']) ? (int)$_POST['tipo_registro'] : 1,
+            'condicao_item' => trim($_POST['condicao_item'] ?? ''),
+            'tipo_registro' => isset($_POST['tipo_registro']) ? (int)$_POST['tipo_registro'] : null,
             'observacao' => trim($_POST['observacao'] ?? ''),
+            'patrimonio' => trim($_POST['patrimonio'] ?? ''),
             'id_funcionario' => !empty($_POST['id_funcionario']) ? (int)$_POST['id_funcionario'] : null,
             'id_localidade' => !empty($_POST['id_localidade']) ? (int)$_POST['id_localidade'] : null,
+            'localidade_path' => isset($_POST['localidade_path']) ? trim($_POST['localidade_path']) : null,
         ]);
         $alert = 'Movimentação registrada com sucesso.';
         header('Location: ?tab=movimentacoes');
@@ -57,9 +64,10 @@ try {
         $synonyms = trim($_POST['sinonimos'] ?? '');
         $unidadeMedida = trim($_POST['unidade_medida'] ?? 'un');
         $requerComprimento = !empty($_POST['requer_comprimento']) ? 1 : 0;
+        $tipoItem = trim($_POST['tipo_item'] ?? 'temporario');
 
         if ($itemId > 0) {
-            $app->updateItemThresholds($itemId, $minQuantity, $desiredQuantity, $purchaseBuffer, $synonyms, $unidadeMedida, $requerComprimento);
+            $app->updateItemThresholds($itemId, $minQuantity, $desiredQuantity, $purchaseBuffer, $synonyms, $unidadeMedida, $requerComprimento, $tipoItem);
 
             $notificationEmail = trim($_POST['notification_email'] ?? '');
             if ($notificationEmail !== '' && filter_var($notificationEmail, FILTER_VALIDATE_EMAIL)) {
@@ -77,13 +85,53 @@ try {
 
 $items = $app->getItems();
 $popularItems = $app->getPopularItems(20);
+$categories = array_unique(array_map(function ($item) {
+    $category = trim($item['categoria'] ?? '');
+    return $category !== '' ? $category : 'Sem categoria';
+}, $items));
+sort($categories, SORT_NATURAL | SORT_FLAG_CASE);
 $funcionarios = $app->getFuncionarios();
 $localidades = $app->getLocalidades();
 $localidadeHierarchy = $app->getLocalidadeHierarchy();
 
 $historyStart = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['data_inicio'] ?? '') ? $_GET['data_inicio'] : null;
 $historyEnd = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['data_fim'] ?? '') ? $_GET['data_fim'] : null;
-$movementHistory = $app->getMovements(null, $historyStart, $historyEnd);
+$historyPatrimonio = trim($_GET['patrimonio'] ?? '');
+$historyView = $_GET['history_view'] ?? 'itens';
+if (!in_array($historyView, ['itens', 'movimentacoes'], true)) {
+    $historyView = 'itens';
+}
+$movementHistory = $app->getMovements(null, $historyStart, $historyEnd, $historyPatrimonio);
+usort($movementHistory, function (array $left, array $right): int {
+    return ((int)($left['id_movimentacao'] ?? 0) <=> (int)($right['id_movimentacao'] ?? 0));
+});
+
+$historyItems = $items;
+usort($historyItems, function (array $left, array $right): int {
+    return ((int)($left['id_item'] ?? 0) <=> (int)($right['id_item'] ?? 0));
+});
+
+if (($GLOBALS['_GET']['ajax'] ?? '') === 'history') {
+    $historyRows = array_map(function (array $movimento): array {
+        $assinatura = (!empty($movimento['assinatura']) && $movimento['assinatura'] !== '0') ? $movimento['assinatura'] : null;
+        return [
+            'data_item' => $movimento['data_item'] ?? '',
+            'tipo' => $movimento['tipo'] ?? '',
+            'item_name' => $movimento['item_name'] ?? '',
+            'condicao_item' => $movimento['condicao_item'] ?? '---',
+            'quantidade' => $movimento['quantidade'] ?? '',
+            'uso' => $movimento['uso'] ?? '',
+            'funcionario' => $movimento['funcionario'] ?? '---',
+            'localidade' => $movimento['localidade'] ?? '---',
+            'patrimonio' => $movimento['patrimonio'] ?? '---',
+            'assinatura' => $assinatura,
+        ];
+    }, $movementHistory);
+
+    header('Content-Type: application/json');
+    echo json_encode(['items' => $historyRows]);
+    exit;
+}
 
 $report = $_GET['report'] ?? 'movimentacoes';
 $allowedReports = ['movimentacoes', 'consumo', 'estoque', 'mailhog'];
@@ -147,6 +195,7 @@ foreach ($items as $item) {
         'estimativa' => $estimateDays,
         'recomendacao' => $recommendedQuantity,
         'notification_emails' => $notificationEmails,
+        'tipo_item' => ($item['tipo_item'] ?? 'temporario') === 'permanente' ? 'permanente' : 'temporario',
     ];
 }
 
@@ -196,50 +245,35 @@ function tabClass(string $tab): string
         <?php if ($activeTab === 'items'): ?>
             <section>
                 <h2>Itens</h2>
-                <form method="post" class="small-form">
+                <form method="post" class="small-form" id="add-item-form">
                     <input type="hidden" name="action" value="add_item">
-                    <label>Nome do item<br><input name="item_name" required></label>
-                    <label>Saldo inicial<br><input type="number" name="item_quantity" min="0" value="0"></label>
-                    <label>Unidade de medida<br>
-                        <select name="unidade_medida">
-                            <option value="un">Unidades</option>
-                            <option value="m">Metros</option>
-                            <option value="kg">Quilogramas</option>
-                            <option value="cx">Caixas</option>
+                    <label>Categoria<br><input name="categoria" required placeholder="Ex: Cabos, Periféricos"></label>
+                    <label>Nome<br><input name="item_name" required placeholder="Ex: Cabo de Rede"></label>
+                    <label>Quantidade<br><input type="number" name="item_quantity" min="0" value="0" required></label>
+                    <label>Tipo de cadastro<br>
+                        <select name="tipo_registro" id="add-item-tipo_registro" required>
+                            <option value="1">Novo</option>
+                            <option value="0">Existente</option>
                         </select>
                     </label>
-                    <label><input type="checkbox" name="requer_comprimento" value="1"> Requer especificação de comprimento</label>
-                    <label>Tipo de estoque inicial<br>
-                        <select name="tipo_registro">
-                            <option value="0">Saldo de transição (Temporário)</option>
-                            <option value="1">Carga permanente (Permanente)</option>
+                    <div id="field-add-item-condicao" style="display:none;">
+                        <label>Condição<br>
+                            <select name="condicao" id="add-item-condicao">
+                                <option value="novo">Novo</option>
+                                <option value="usado">Usado</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label>Classificação do item<br>
+                        <select name="tipo_item" required>
+                            <option value="temporario">Item temporário</option>
+                            <option value="permanente">Item permanente</option>
                         </select>
                     </label>
-                    <label>Sinônimos (vírgula separado)<br><input name="sinonimos" placeholder="fita, cabo, energia"></label>
+                    <label>Sinônimos (vírgula separado)<br><input name="sinonimos" required placeholder="Cabo de Rede, Patch Cord, RJ45"></label>
                     <button type="submit">Cadastrar Item</button>
                 </form>
 
-                <?php if (empty($items)): ?>
-                    <p>Nenhum item cadastrado.</p>
-                <?php else: ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Item</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($items as $item): ?>
-                                <tr>
-                                    <td><?= e((string)$item['id_item']) ?></td>
-                                    <td><?= e($item['item']) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-                <p class="note">As informações de quantidade mínima, desejável, e-mails de alerta, estimativa e recomendação de compra estão disponíveis no dashboard Relatórios.</p>
             </section>
         <?php elseif ($activeTab === 'movimentacoes'): ?>
             <section>
@@ -259,21 +293,17 @@ function tabClass(string $tab): string
                         </select>
                     </label>
                     <label>Data<br><input type="date" name="data_item" value="<?= date('Y-m-d') ?>" required></label>
-                    <label>Item<br>
-                        <select name="id_item" id="item_search" required>
-                            <option value="" disabled selected>Selecione o item</option>
-                            <?php foreach ($popularItems as $item): ?>
-                                <option
-                                    value="<?= e($item['id_item']) ?>"
-                                    data-tokens="<?= e($item['item'] . ($item['sinonimos'] ? ', ' . $item['sinonimos'] : '')) ?>"
-                                    data-synonyms="<?= e($item['sinonimos']) ?>"
-                                    data-stock="<?= e($app->getStock((int)$item['id_item'])) ?>"
-                                    data-unidade="<?= e($item['unidade_medida'] ?? 'un') ?>"
-                                    data-requer-comprimento="<?= e((string)($item['requer_comprimento'] ?? 0)) ?>"
-                                >
-                                    <?= e($item['item']) ?>
-                                </option>
+                    <label>Categoria<br>
+                        <select name="item_category" id="item_category" required>
+                            <option value="" disabled selected>Selecione a categoria</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?= e($category) ?>"><?= e($category) ?></option>
                             <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>Item<br>
+                        <select name="id_item" id="item_search" disabled required>
+                            <option value="" disabled selected>Selecione a categoria primeiro</option>
                         </select>
                     </label>
                     <label>Patrimônio (opcional)<br><input type="text" name="patrimonio" placeholder="Ex: 1234, 5678"></label>
@@ -283,7 +313,7 @@ function tabClass(string $tab): string
                         <label>Metragem/Comprimento<br><input type="number" step="0.01" name="comprimento" min="0" value=""></label>
                     </div>
                     <small id="quantidade-erro" style="display:none; color:#b91c1c; margin-top:6px; display:block;">Quantidade superior ao saldo disponível!</small>
-                    <div id="field-item-condition" class="form-field hidden" style="display:none;">
+                    <div id="field-item-condition" class="form-field">
                         <label>Condição do item<br>
                             <select name="condicao_item">
                                 <option value="" disabled selected>Selecione a condição</option>
@@ -338,17 +368,27 @@ function tabClass(string $tab): string
             </section>
         <?php elseif ($activeTab === 'historico'): ?>
             <section>
-                <h2>Histórico de Movimentações</h2>
+                <h2><?= $historyView === 'itens' ? 'Itens' : 'Histórico de Movimentações' ?></h2>
+                <div class="report-buttons">
+                    <a class="<?= $historyView === 'itens' ? 'report-button active' : 'report-button' ?>" href="?tab=historico&history_view=itens&per_page=<?= e((string)$perPage) ?><?php if ($historyStart !== null): ?>&data_inicio=<?= e(urlencode($historyStart)) ?><?php endif; ?><?php if ($historyEnd !== null): ?>&data_fim=<?= e(urlencode($historyEnd)) ?><?php endif; ?><?php if ($historyPatrimonio !== ''): ?>&patrimonio=<?= e(urlencode($historyPatrimonio)) ?><?php endif; ?>">Itens</a>
+                    <a class="<?= $historyView === 'movimentacoes' ? 'report-button active' : 'report-button' ?>" href="?tab=historico&history_view=movimentacoes&per_page=<?= e((string)$perPage) ?><?php if ($historyStart !== null): ?>&data_inicio=<?= e(urlencode($historyStart)) ?><?php endif; ?><?php if ($historyEnd !== null): ?>&data_fim=<?= e(urlencode($historyEnd)) ?><?php endif; ?><?php if ($historyPatrimonio !== ''): ?>&patrimonio=<?= e(urlencode($historyPatrimonio)) ?><?php endif; ?>">Movimentações</a>
+                </div>
                 <?php $movimentacoes = $historyPaged; ?>
                 <div class="table-actions">
                     <form method="get" class="historico-filter-form">
                         <input type="hidden" name="tab" value="historico">
-                        <label>Data inicial<br>
-                            <input type="date" name="data_inicio" value="<?= e($historyStart ?? '') ?>">
-                        </label>
-                        <label>Data final<br>
-                            <input type="date" name="data_fim" value="<?= e($historyEnd ?? '') ?>">
-                        </label>
+                        <input type="hidden" name="history_view" value="<?= e($historyView) ?>">
+                        <?php if ($historyView === 'movimentacoes'): ?>
+                            <label>Data inicial<br>
+                                <input type="date" name="data_inicio" value="<?= e($historyStart ?? '') ?>">
+                            </label>
+                            <label>Data final<br>
+                                <input type="date" name="data_fim" value="<?= e($historyEnd ?? '') ?>">
+                            </label>
+                            <label>Patrimônio<br>
+                                <input type="text" name="patrimonio" value="<?= e($historyPatrimonio ?? '') ?>" placeholder="Pesquisar patrimônio">
+                            </label>
+                        <?php endif; ?>
                         <label>Registros por página<br>
                             <select name="per_page">
                                 <?php foreach ([5, 10, 20, 50] as $option): ?>
@@ -359,50 +399,87 @@ function tabClass(string $tab): string
                         <button type="submit">Filtrar</button>
                     </form>
                 </div>
-                <?php if (empty($movimentacoes)): ?>
-                    <p>Nenhuma movimentação registrada.</p>
-                <?php else: ?>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Data</th>
-                                <th>Tipo</th>
-                                <th>Item</th>
-                                <th>Quantidade</th>
-                                <th>Uso</th>
-                                <th>Funcionário</th>
-                                <th>Localidade</th>
-                                <th>Patrimônio</th>
-                                <th>Assinatura</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($movimentacoes as $movimento): ?>
-                                <?php $assinatura = (!empty($movimento['assinatura']) && $movimento['assinatura'] !== '0') ? ('<img src="' . e($movimento['assinatura']) . '" class="img-assinatura-thumbnail" onclick="showSignature(this.src)">') : '---'; ?>
-                                <tr>
-                                    <td><?= e($movimento['id_movimentacao']) ?></td>
-                                    <td><?= e($movimento['data_item']) ?></td>
-                                    <td><?= e($movimento['tipo']) ?></td>
-                                    <td><?= e($movimento['item_name']) ?></td>
-                                    <td><?= e($movimento['quantidade']) ?></td>
-                                    <td><?= e($movimento['uso']) ?></td>
-                                    <td><?= e($movimento['funcionario'] ?? '---') ?></td>
-                                    <td><?= e($movimento['localidade'] ?? '---') ?></td>
-                                    <td><?= e($movimento['patrimonio'] ?? '---') ?></td>
-                                    <td class="signature-cell"><?= $assinatura ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    <?php if ($historyPages > 1): ?>
-                        <div class="pagination">
-                            <?php for ($i = 1; $i <= $historyPages; $i++): ?>
-                                <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=historico&page=<?= e((string)$i) ?>&per_page=<?= e((string)$perPage) ?><?php if ($historyStart !== null): ?>&data_inicio=<?= e(urlencode($historyStart)) ?><?php endif; ?><?php if ($historyEnd !== null): ?>&data_fim=<?= e(urlencode($historyEnd)) ?><?php endif; ?>"><?= e((string)$i) ?></a>
-                            <?php endfor; ?>
-                        </div>
+                <div id="history-results">
+                    <?php if ($historyView === 'itens'): ?>
+                        <?php if (empty($items)): ?>
+                            <p>Nenhum item cadastrado.</p>
+                        <?php else: ?>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Categoria</th>
+                                        <th>Nome</th>
+                                        <th>Condição</th>
+                                        <th>Quantidade</th>
+                                        <th>Tipo de cadastro</th>
+                                        <th>Classificação</th>
+                                        <th>Sinônimos</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($historyItems as $item): ?>
+                                        <tr>
+                                            <td><?= e((string)$item['id_item']) ?></td>
+                                            <td><?= e(trim($item['categoria'] ?? '') !== '' ? $item['categoria'] : 'Sem categoria') ?></td>
+                                            <td><?= e($item['item']) ?></td>
+                                            <td><?= e($item['condicao'] ?? 'novo') ?></td>
+                                            <td><?= e((string)($item['saldo_atual'] ?? 0)) ?></td>
+                                            <td><?= e((int)($item['tipo_registro'] ?? 1) === 1 ? 'Novo' : 'Existente') ?></td>
+                                            <td><?= e(($item['tipo_item'] ?? 'temporario') === 'permanente' ? 'Item permanente' : 'Item temporário') ?></td>
+                                            <td><?= e($item['sinonimos'] ?? '') ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <?php if (empty($movimentacoes)): ?>
+                            <p>Nenhuma movimentação registrada.</p>
+                        <?php else: ?>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Tipo</th>
+                                        <th>Item</th>
+                                        <th>Condição</th>
+                                        <th>Quantidade</th>
+                                        <th>Uso</th>
+                                        <th>Funcionário</th>
+                                        <th>Localidade</th>
+                                        <th>Patrimônio</th>
+                                        <th>Assinatura</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($movimentacoes as $movimento): ?>
+                                        <?php $assinatura = (!empty($movimento['assinatura']) && $movimento['assinatura'] !== '0') ? ('<img src="' . e($movimento['assinatura']) . '" class="img-assinatura-thumbnail" onclick="showSignature(this.src)">') : '---'; ?>
+                                        <tr>
+                                            <td><?= e($movimento['data_item']) ?></td>
+                                            <td><?= e($movimento['tipo']) ?></td>
+                                            <td><?= e($movimento['item_name']) ?></td>
+                                            <td><?= e($movimento['condicao_item'] ?? '---') ?></td>
+                                            <td><?= e($movimento['quantidade']) ?></td>
+                                            <td><?= e($movimento['uso']) ?></td>
+                                            <td><?= e($movimento['funcionario'] ?? '---') ?></td>
+                                            <td><?= e($movimento['localidade'] ?? '---') ?></td>
+                                            <td><?= e($movimento['patrimonio'] ?? '---') ?></td>
+                                            <td class="signature-cell"><?= $assinatura ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <?php if ($historyPages > 1): ?>
+                                <div class="pagination">
+                                    <?php for ($i = 1; $i <= $historyPages; $i++): ?>
+                                        <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=historico&page=<?= e((string)$i) ?>&history_view=movimentacoes&per_page=<?= e((string)$perPage) ?><?php if ($historyStart !== null): ?>&data_inicio=<?= e(urlencode($historyStart)) ?><?php endif; ?><?php if ($historyEnd !== null): ?>&data_fim=<?= e(urlencode($historyEnd)) ?><?php endif; ?><?php if ($historyPatrimonio !== ''): ?>&patrimonio=<?= e(urlencode($historyPatrimonio)) ?><?php endif; ?>"><?= e((string)$i) ?></a>
+                                    <?php endfor; ?>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
                     <?php endif; ?>
-                <?php endif; ?>
+                </div>
             </section>
         <?php elseif ($activeTab === 'relatorio'): ?>
             <section>
@@ -465,10 +542,10 @@ function tabClass(string $tab): string
                         <table>
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Data</th>
                                     <th>Tipo</th>
                                     <th>Item</th>
+                                    <th>Condição</th>
                                     <th>Quantidade</th>
                                     <th>Uso</th>
                                     <th>Funcionário</th>
@@ -481,10 +558,10 @@ function tabClass(string $tab): string
                                 <?php foreach ($movementHistoryPaged as $movimento): ?>
                                     <?php $assinatura = (!empty($movimento['assinatura']) && $movimento['assinatura'] !== '0') ? ('<img src="' . e($movimento['assinatura']) . '" class="img-assinatura-thumbnail" onclick="showSignature(this.src)">') : '---'; ?>
                                     <tr>
-                                        <td><?= e((string)$movimento['id_movimentacao']) ?></td>
                                         <td><?= e($movimento['data_item']) ?></td>
                                         <td><?= e($movimento['tipo']) ?></td>
                                         <td><?= e($movimento['item_name']) ?></td>
+                                        <td><?= e($movimento['condicao_item'] ?? '---') ?></td>
                                         <td><?= e((string)$movimento['quantidade']) ?></td>
                                         <td><?= e($movimento['uso']) ?></td>
                                         <td><?= e($movimento['funcionario'] ?? '---') ?></td>
@@ -626,17 +703,11 @@ function tabClass(string $tab): string
                                                 <label>Min<br><input type="number" name="quantidade_minima" min="0" value="<?= e((string)$row['quantidade_minima']) ?>" style="width:70px"></label>
                                                 <label>Desejável<br><input type="number" name="quantidade_desejavel" min="0" value="<?= e((string)$row['quantidade_desejavel']) ?>" style="width:70px"></label>
                                                 <label>Sobra acima do desejável<br><input type="number" name="quantidade_sobra_compra" min="0" value="<?= e((string)($row['quantidade_sobra_compra'] ?? 0)) ?>" style="width:70px"></label>
-                                                <label>Unidade de medida<br>
-                                                    <select name="unidade_medida" style="width:120px">
-                                                        <option value="un" <?= e($row['unidade_medida'] ?? 'un') === 'un' ? 'selected' : '' ?>>Un</option>
-                                                        <option value="m" <?= e($row['unidade_medida'] ?? 'un') === 'm' ? 'selected' : '' ?>>m</option>
-                                                        <option value="kg" <?= e($row['unidade_medida'] ?? 'un') === 'kg' ? 'selected' : '' ?>>kg</option>
-                                                        <option value="cx" <?= e($row['unidade_medida'] ?? 'un') === 'cx' ? 'selected' : '' ?>>cx</option>
+                                                <label>Classificação<br>
+                                                    <select name="tipo_item" style="width:140px">
+                                                        <option value="temporario" <?= (($row['tipo_item'] ?? 'temporario') === 'temporario') ? 'selected' : '' ?>>Item temporário</option>
+                                                        <option value="permanente" <?= (($row['tipo_item'] ?? 'temporario') === 'permanente') ? 'selected' : '' ?>>Item permanente</option>
                                                     </select>
-                                                </label>
-                                                <label style="display:flex; align-items:center; gap:4px;">
-                                                    <input type="checkbox" name="requer_comprimento" value="1" <?= isset($row['requer_comprimento']) && (int)$row['requer_comprimento'] === 1 ? 'checked' : '' ?>>
-                                                    Requer comprimento
                                                 </label>
                                                 <label>Email<br><input type="email" name="notification_email" placeholder="destinatário" style="width:155px"></label>
                                                 <button type="submit">Salvar</button>
@@ -674,32 +745,55 @@ function tabClass(string $tab): string
         window.LOCALIDADE_HIERARCHY = <?= json_encode($localidadeHierarchy, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     </script>
     <script>
-        window.INITIAL_ITEMS = <?= json_encode(array_map(function ($item) use ($app) {
-            return [
-                'value' => (int)$item['id_item'],
-                'text' => $item['item'],
-                'tokens' => $item['item'] . ($item['sinonimos'] ? ', ' . $item['sinonimos'] : ''),
-                'synonyms' => $item['sinonimos'] ?? '',
-                'stock' => $app->getStock((int)$item['id_item']),
-                'unidade' => $item['unidade_medida'] ?? 'un',
-                'requer_comprimento' => (int)($item['requer_comprimento'] ?? 0),
-            ];
-        }, $popularItems), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
-
         window.ITEMS = <?= json_encode(array_map(function ($item) use ($app) {
+            $category = trim($item['categoria'] ?? '');
             return [
-                'value' => (int)$item['id_item'],
-                'text' => $item['item'],
-                'tokens' => $item['item'] . ($item['sinonimos'] ? ', ' . $item['sinonimos'] : ''),
+                'value' => (string)(int)$item['id_item'],
+                'text' => $item['item'] . ' (' . ($item['condicao'] ?? 'novo') . ')',
+                'category' => $category !== '' ? $category : 'Sem categoria',
+                'tokens' => $item['item'] . ' ' . ($item['condicao'] ?? 'novo') . ($item['sinonimos'] ? ', ' . $item['sinonimos'] : ''),
                 'synonyms' => $item['sinonimos'] ?? '',
                 'stock' => $app->getStock((int)$item['id_item']),
+                'tipo_registro' => (int)($item['tipo_registro'] ?? 1),
+                'tipo_item' => ($item['tipo_item'] ?? 'temporario') === 'permanente' ? 'permanente' : 'temporario',
                 'unidade' => $item['unidade_medida'] ?? 'un',
                 'requer_comprimento' => (int)($item['requer_comprimento'] ?? 0),
+                'condicao' => $item['condicao'] ?? 'novo',
             ];
         }, $items), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+        function showSignature(src) {
+            const overlay = document.querySelector('.signature-modal-overlay');
+            const image = document.querySelector('.signature-modal-img');
+            if (!overlay || !image) {
+                return;
+            }
+            image.src = src;
+            overlay.classList.add('active');
+        }
+
+        function hideSignature() {
+            const overlay = document.querySelector('.signature-modal-overlay');
+            if (!overlay) {
+                return;
+            }
+            overlay.classList.remove('active');
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                hideSignature();
+            }
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <div class="signature-modal-overlay" onclick="hideSignature()">
+        <div class="signature-modal-content" onclick="event.stopPropagation();">
+            <button type="button" class="signature-modal-close" onclick="hideSignature()" aria-label="Fechar">×</button>
+            <img src="" alt="Assinatura ampliada" class="signature-modal-img">
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js?v=1"></script>
-    <script src="form.js?v=9"></script>
+    <script src="form.js?v=10"></script>
 </body>
 </html>

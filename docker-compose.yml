@@ -10,9 +10,14 @@ services:
       DB_NAME: estoque
       DB_USER: estoque
       DB_PASS: estoque_pass
-      SMTP_HOST: mailhog
-      SMTP_PORT: 1025
-      SMTP_FROM_EMAIL: alerta@estoque.local
+      SMTP_HOST: mail.olimpia.sp.gov.br
+      SMTP_PORT: 465
+      SMTP_SECURE: ssl
+      SMTP_FROM_EMAIL: alertas@olimpia.sp.gov.br
+      SMTP_MONITOR_HOST: mailhog
+      SMTP_MONITOR_PORT: 1025
+      SMTP_MONITOR_FROM_EMAIL: alertas@olimpia.sp.gov.br
+      SMTP_MONITOR_SECURE: none
     depends_on:
       - db
       - mailhog

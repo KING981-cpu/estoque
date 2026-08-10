@@ -1,0 +1,9 @@
+HELO:<localhost>
+FROM:<alerta@olimpia.sp.gov.br>
+TO:<avisos.estoque@olimpia.sp.gov.br>
+
+From: alerta@olimpia.sp.gov.br
+To: avisos.estoque@olimpia.sp.gov.br
+Subject: Teste SMTP Gmail
+
+Corpo do teste.

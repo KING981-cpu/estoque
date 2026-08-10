@@ -33,9 +33,12 @@ class EnvLoader
                 $value = substr($value, 1, -1);
             }
 
-            putenv("{$name}={$value}");
-            $_ENV[$name] = $value;
-            $_SERVER[$name] = $value;
+            // Preserve existing environment values passed by Docker or the shell.
+            if (getenv($name) === false) {
+                putenv("{$name}={$value}");
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+            }
         }
     }
 }

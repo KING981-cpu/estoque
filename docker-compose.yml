@@ -2,6 +2,7 @@ services:
   app:
     build: .
     container_name: estoque_app
+    restart: unless-stopped
     ports:
       - "8001:80"
     environment:

@@ -13,7 +13,12 @@ class ItemModel
 
     public function all(): array
     {
-        $statement = $this->pdo->prepare(
+        return $this->allByStatus(1);
+    }
+
+    public function allByStatus(int $active, ?string $startDate = null, ?string $endDate = null, string $patrimonio = ''): array
+    {
+        $query =
             'SELECT i.*, COALESCE(m.mov_count, 0) AS movimentacao_count
              FROM item i
              LEFT JOIN (
@@ -21,9 +26,29 @@ class ItemModel
                  FROM movimentacao
                  GROUP BY id_item
              ) m ON i.id_item = m.id_item
-             ORDER BY mov_count DESC, i.item ASC'
-        );
-        $statement->execute();
+             WHERE i.ativo = ?';
+        $params = [$active];
+
+        if ($startDate !== null || $endDate !== null || $patrimonio !== '') {
+            $query .= ' AND EXISTS (SELECT 1 FROM movimentacao mf WHERE mf.id_item = i.id_item';
+            if ($startDate !== null) {
+                $query .= ' AND mf.data_item >= ?';
+                $params[] = $startDate;
+            }
+            if ($endDate !== null) {
+                $query .= ' AND mf.data_item <= ?';
+                $params[] = $endDate;
+            }
+            if ($patrimonio !== '') {
+                $query .= ' AND mf.patrimonio LIKE ?';
+                $params[] = '%' . $patrimonio . '%';
+            }
+            $query .= ')';
+        }
+
+        $query .= ' ORDER BY mov_count DESC, i.item ASC';
+        $statement = $this->pdo->prepare($query);
+        $statement->execute($params);
         return $statement->fetchAll();
     }
 
@@ -37,6 +62,7 @@ class ItemModel
                  FROM movimentacao
                  GROUP BY id_item
              ) m ON i.id_item = m.id_item
+             WHERE i.ativo = 1
              ORDER BY mov_count DESC, i.item ASC
              LIMIT ?'
         );
@@ -176,6 +202,16 @@ PDO::PARAM_INT);
         return $updated;
     }
 
+    public function updateBasic(int $itemId, string $category, string $name, string $condition, int $quantity, string $synonyms, string $tipoItem): bool
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE item SET categoria = ?, item = ?, condicao = ?, saldo_atual = ?, sinonimos = ?, tipo_item = ?, tipo_registro = ? WHERE id_item = ?'
+        );
+        $tipoItemValue = $this->normalizeTipoItem($tipoItem);
+        $tipoRegistro = $this->resolveLegacyTipoRegistro(0, $tipoItemValue);
+        return $statement->execute([$category, $name, $condition, $quantity, $synonyms, $tipoItemValue, $tipoRegistro, $itemId]);
+    }
+
     public function findByNameAndCondition(string $name, string $condition): ?array
     {
         if (!$this->hasCondicaoColumn()) {
@@ -293,7 +329,7 @@ PDO::PARAM_INT);
 
     public function delete(int $id): void
     {
-        $statement = $this->pdo->prepare('DELETE FROM item WHERE id_item = ?');
+        $statement = $this->pdo->prepare('UPDATE item SET ativo = 0 WHERE id_item = ?');
         $statement->execute([$id]);
     }
 

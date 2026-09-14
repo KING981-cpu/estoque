@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS item (
     quantidade_sobra_compra INT NOT NULL DEFAULT 0,
     sinonimos TEXT NOT NULL,
     requer_comprimento TINYINT(1) NOT NULL DEFAULT 0,
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
     UNIQUE KEY uniq_item_condicao (item, condicao)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 SQL
@@ -123,7 +124,7 @@ SQL
             return;
         }
 
-        $needsAlter = !isset($columns['quantidade_minima']) || !isset($columns['quantidade_desejavel']) || !isset($columns['quantidade_sobra_compra']) || !isset($columns['sinonimos']) || !isset($columns['tipo_registro']) || !isset($columns['tipo_item']) || !isset($columns['unidade_medida']) || !isset($columns['saldo_atual']) || !isset($columns['requer_comprimento']) || !isset($columns['categoria']) || !isset($columns['condicao']);
+        $needsAlter = !isset($columns['quantidade_minima']) || !isset($columns['quantidade_desejavel']) || !isset($columns['quantidade_sobra_compra']) || !isset($columns['sinonimos']) || !isset($columns['tipo_registro']) || !isset($columns['tipo_item']) || !isset($columns['unidade_medida']) || !isset($columns['saldo_atual']) || !isset($columns['requer_comprimento']) || !isset($columns['categoria']) || !isset($columns['condicao']) || !isset($columns['ativo']);
         if (!$needsAlter) {
             return;
         }
@@ -169,6 +170,10 @@ SQL
 
             if (!isset($columns['requer_comprimento'])) {
                 $this->pdo->exec('ALTER TABLE item ADD COLUMN requer_comprimento TINYINT(1) NOT NULL DEFAULT 0');
+            }
+
+            if (!isset($columns['ativo'])) {
+                $this->pdo->exec('ALTER TABLE item ADD COLUMN ativo TINYINT(1) NOT NULL DEFAULT 1');
             }
 
             if ($this->hasItemColumn('categoria')) {

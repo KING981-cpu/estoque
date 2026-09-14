@@ -33,6 +33,11 @@ class InventoryApp
         return $this->items->all();
     }
 
+    public function getItemsByStatus(bool $active, ?string $startDate = null, ?string $endDate = null, string $patrimonio = ''): array
+    {
+        return $this->items->allByStatus($active ? 1 : 0, $startDate, $endDate, $patrimonio);
+    }
+
     public function getPopularItems(int $limit = 20): array
     {
         return $this->items->popular($limit);
@@ -127,6 +132,26 @@ class InventoryApp
     public function updateItemThresholds(int $itemId, int $minQuantity, int $desiredQuantity, int $purchaseBuffer = 0, string $synonyms = '', string $unidadeMedida = 'un', int $requerComprimento = 0, ?string $tipoItem = null): bool
     {
         return $this->items->updateThresholds($itemId, $minQuantity, $desiredQuantity, $purchaseBuffer, $synonyms, $unidadeMedida, $requerComprimento, $tipoItem);
+    }
+
+    public function updateItem(int $itemId, string $category, string $name, string $condition, int $quantity, string $synonyms, string $tipoItem): bool
+    {
+        if ($itemId <= 0 || trim($category) === '' || trim($name) === '' || trim($synonyms) === '') {
+            throw new \InvalidArgumentException('Categoria, nome e sinônimos são obrigatórios.');
+        }
+        if ($quantity < 0 || !in_array($condition, ['novo', 'usado'], true)) {
+            throw new \InvalidArgumentException('Dados do item inválidos.');
+        }
+
+        return $this->items->updateBasic($itemId, trim($category), trim($name), $condition, $quantity, trim($synonyms), $tipoItem);
+    }
+
+    public function deactivateItem(int $itemId): void
+    {
+        if ($itemId <= 0) {
+            throw new \InvalidArgumentException('Item inválido.');
+        }
+        $this->items->delete($itemId);
     }
 
     /**

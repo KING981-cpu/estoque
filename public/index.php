@@ -56,6 +56,26 @@ try {
         exit;
     }
 
+    if ($action === 'update_item') {
+        $app->updateItem(
+            (int)($_POST['item_id'] ?? 0),
+            trim($_POST['categoria'] ?? ''),
+            trim($_POST['item_name'] ?? ''),
+            trim($_POST['condicao'] ?? 'novo'),
+            max(0, (int)($_POST['item_quantity'] ?? 0)),
+            trim($_POST['sinonimos'] ?? ''),
+            trim($_POST['tipo_item'] ?? 'temporario')
+        );
+        header('Location: ?tab=historico&history_view=itens');
+        exit;
+    }
+
+    if ($action === 'delete_item') {
+        $app->deactivateItem((int)($_POST['item_id'] ?? 0));
+        header('Location: ?tab=historico&history_view=itens');
+        exit;
+    }
+
     if ($action === 'update_item_settings') {
         $itemId = !empty($_POST['item_id']) ? (int)$_POST['item_id'] : 0;
         $minQuantity = max(0, (int)($_POST['quantidade_minima'] ?? 0));
@@ -98,7 +118,7 @@ $historyStart = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['data_inicio'] ?? '') 
 $historyEnd = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['data_fim'] ?? '') ? $_GET['data_fim'] : null;
 $historyPatrimonio = trim($_GET['patrimonio'] ?? '');
 $historyView = $_GET['history_view'] ?? 'itens';
-if (!in_array($historyView, ['itens', 'movimentacoes'], true)) {
+if (!in_array($historyView, ['itens', 'movimentacoes', 'lixeira'], true)) {
     $historyView = 'itens';
 }
 $movementHistory = $app->getMovements(null, $historyStart, $historyEnd, $historyPatrimonio);
@@ -106,7 +126,9 @@ usort($movementHistory, function (array $left, array $right): int {
     return ((int)($left['id_movimentacao'] ?? 0) <=> (int)($right['id_movimentacao'] ?? 0));
 });
 
-$historyItems = $items;
+$historyItems = $historyView === 'lixeira'
+    ? $app->getItemsByStatus(false, $historyStart, $historyEnd, $historyPatrimonio)
+    : $app->getItemsByStatus(true, $historyStart, $historyEnd, $historyPatrimonio);
 usort($historyItems, function (array $left, array $right): int {
     return ((int)($left['id_item'] ?? 0) <=> (int)($right['id_item'] ?? 0));
 });
@@ -167,6 +189,10 @@ $movementHistoryPaged = array_slice($movementReport, ($page - 1) * $perPage, $pe
 $historyTotal = count($movementHistory);
 $historyPages = (int)max(1, ceil($historyTotal / $perPage));
 $historyPaged = array_slice($movementHistory, ($page - 1) * $perPage, $perPage);
+
+$historyItemsTotal = count($historyItems);
+$historyItemsPages = (int)max(1, ceil($historyItemsTotal / $perPage));
+$historyItemsPaged = array_slice($historyItems, ($page - 1) * $perPage, $perPage);
 
 $monthlyTotal = count($monthlyConsumption);
 $monthlyPages = (int)max(1, ceil($monthlyTotal / $perPage));
@@ -368,9 +394,10 @@ function tabClass(string $tab): string
             </section>
         <?php elseif ($activeTab === 'historico'): ?>
             <section>
-                <h2><?= $historyView === 'itens' ? 'Itens' : 'Histórico de Movimentações' ?></h2>
+                <h2><?= $historyView === 'itens' ? 'Itens' : ($historyView === 'lixeira' ? 'Lixeira' : 'Histórico de Movimentações') ?></h2>
                 <div class="report-buttons">
                     <a class="<?= $historyView === 'itens' ? 'report-button active' : 'report-button' ?>" href="?tab=historico&history_view=itens&per_page=<?= e((string)$perPage) ?><?php if ($historyStart !== null): ?>&data_inicio=<?= e(urlencode($historyStart)) ?><?php endif; ?><?php if ($historyEnd !== null): ?>&data_fim=<?= e(urlencode($historyEnd)) ?><?php endif; ?><?php if ($historyPatrimonio !== ''): ?>&patrimonio=<?= e(urlencode($historyPatrimonio)) ?><?php endif; ?>">Itens</a>
+                    <a class="<?= $historyView === 'lixeira' ? 'report-button active' : 'report-button' ?>" href="?tab=historico&history_view=lixeira&per_page=<?= e((string)$perPage) ?>">Lixeira</a>
                     <a class="<?= $historyView === 'movimentacoes' ? 'report-button active' : 'report-button' ?>" href="?tab=historico&history_view=movimentacoes&per_page=<?= e((string)$perPage) ?><?php if ($historyStart !== null): ?>&data_inicio=<?= e(urlencode($historyStart)) ?><?php endif; ?><?php if ($historyEnd !== null): ?>&data_fim=<?= e(urlencode($historyEnd)) ?><?php endif; ?><?php if ($historyPatrimonio !== ''): ?>&patrimonio=<?= e(urlencode($historyPatrimonio)) ?><?php endif; ?>">Movimentações</a>
                 </div>
                 <?php $movimentacoes = $historyPaged; ?>
@@ -378,7 +405,7 @@ function tabClass(string $tab): string
                     <form method="get" class="historico-filter-form">
                         <input type="hidden" name="tab" value="historico">
                         <input type="hidden" name="history_view" value="<?= e($historyView) ?>">
-                        <?php if ($historyView === 'movimentacoes'): ?>
+                        <?php if (in_array($historyView, ['itens', 'lixeira', 'movimentacoes'], true)): ?>
                             <label>Data inicial<br>
                                 <input type="date" name="data_inicio" value="<?= e($historyStart ?? '') ?>">
                             </label>
@@ -400,9 +427,9 @@ function tabClass(string $tab): string
                     </form>
                 </div>
                 <div id="history-results">
-                    <?php if ($historyView === 'itens'): ?>
-                        <?php if (empty($items)): ?>
-                            <p>Nenhum item cadastrado.</p>
+                    <?php if (in_array($historyView, ['itens', 'lixeira'], true)): ?>
+                        <?php if (empty($historyItems)): ?>
+                            <p><?= $historyView === 'lixeira' ? 'Nenhum item excluído.' : 'Nenhum item cadastrado.' ?></p>
                         <?php else: ?>
                             <table>
                                 <thead>
@@ -415,10 +442,11 @@ function tabClass(string $tab): string
                                         <th>Tipo de cadastro</th>
                                         <th>Classificação</th>
                                         <th>Sinônimos</th>
+                                        <th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($historyItems as $item): ?>
+                                    <?php foreach ($historyItemsPaged as $item): ?>
                                         <tr>
                                             <td><?= e((string)$item['id_item']) ?></td>
                                             <td><?= e(trim($item['categoria'] ?? '') !== '' ? $item['categoria'] : 'Sem categoria') ?></td>
@@ -428,10 +456,48 @@ function tabClass(string $tab): string
                                             <td><?= e((int)($item['tipo_registro'] ?? 1) === 1 ? 'Novo' : 'Existente') ?></td>
                                             <td><?= e(($item['tipo_item'] ?? 'temporario') === 'permanente' ? 'Item permanente' : 'Item temporário') ?></td>
                                             <td><?= e($item['sinonimos'] ?? '') ?></td>
+                                            <td>
+                                                <details>
+                                                    <summary>Editar</summary>
+                                                    <form method="post" class="item-edit-form">
+                                                        <input type="hidden" name="action" value="update_item">
+                                                        <input type="hidden" name="item_id" value="<?= e((string)$item['id_item']) ?>">
+                                                        <label>Categoria<br><input name="categoria" value="<?= e($item['categoria'] ?? '') ?>" required></label>
+                                                        <label>Nome<br><input name="item_name" value="<?= e($item['item']) ?>" required></label>
+                                                        <label>Condição<br>
+                                                            <select name="condicao">
+                                                                <option value="novo" <?= ($item['condicao'] ?? 'novo') === 'novo' ? 'selected' : '' ?>>Novo</option>
+                                                                <option value="usado" <?= ($item['condicao'] ?? '') === 'usado' ? 'selected' : '' ?>>Usado</option>
+                                                            </select>
+                                                        </label>
+                                                        <label>Quantidade<br><input type="number" name="item_quantity" min="0" value="<?= e((string)($item['saldo_atual'] ?? 0)) ?>" required></label>
+                                                        <label>Classificação<br>
+                                                            <select name="tipo_item">
+                                                                <option value="temporario" <?= ($item['tipo_item'] ?? 'temporario') === 'temporario' ? 'selected' : '' ?>>Temporário</option>
+                                                                <option value="permanente" <?= ($item['tipo_item'] ?? '') === 'permanente' ? 'selected' : '' ?>>Permanente</option>
+                                                            </select>
+                                                        </label>
+                                                        <label>Sinônimos<br><input name="sinonimos" value="<?= e($item['sinonimos'] ?? '') ?>" required></label>
+                                                        <button type="submit">Salvar</button>
+                                                    </form>
+                                                </details>
+                                                <form method="post" onsubmit="return confirm('Tem certeza que deseja excluir este item?');">
+                                                    <input type="hidden" name="action" value="delete_item">
+                                                    <input type="hidden" name="item_id" value="<?= e((string)$item['id_item']) ?>">
+                                                    <button type="submit">Excluir</button>
+                                                </form>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
+                            <?php if ($historyItemsPages > 1): ?>
+                                <div class="pagination">
+                                    <?php for ($i = 1; $i <= $historyItemsPages; $i++): ?>
+                                        <a class="<?= $i === $page ? 'page-link active' : 'page-link' ?>" href="?tab=historico&page=<?= e((string)$i) ?>&history_view=<?= e($historyView) ?>&per_page=<?= e((string)$perPage) ?><?php if ($historyStart !== null): ?>&data_inicio=<?= e(urlencode($historyStart)) ?><?php endif; ?><?php if ($historyEnd !== null): ?>&data_fim=<?= e(urlencode($historyEnd)) ?><?php endif; ?><?php if ($historyPatrimonio !== ''): ?>&patrimonio=<?= e(urlencode($historyPatrimonio)) ?><?php endif; ?>"><?= e((string)$i) ?></a>
+                                    <?php endfor; ?>
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
                     <?php else: ?>
                         <?php if (empty($movimentacoes)): ?>

@@ -95,9 +95,6 @@ SQL
             FOREIGN KEY (id_item) REFERENCES item(id_item)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
 
-        $this->ensureMovementSchema();
-        $this->synchronizeItemTipoRegistroWithMovements();
-
         $this->pdo->exec('CREATE TABLE IF NOT EXISTS movimentacao (
             id_movimentacao INT PRIMARY KEY AUTO_INCREMENT,
             tipo ENUM(\'entrada\', \'saída\') NOT NULL,
@@ -108,6 +105,7 @@ SQL
             tipo_registro TINYINT(1) NOT NULL DEFAULT 1,
             `observação` VARCHAR(200) NOT NULL,
             patrimonio VARCHAR(255) NOT NULL DEFAULT \'\',
+            condicao_item VARCHAR(50) NOT NULL DEFAULT \'\',
             id_funcionario INT,
             id_localidade INT,
             id_item INT,
@@ -115,6 +113,9 @@ SQL
             FOREIGN KEY (id_localidade) REFERENCES localidade(id_localidade),
             FOREIGN KEY (id_item) REFERENCES item(id_item)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+
+        $this->ensureMovementSchema();
+        $this->synchronizeItemTipoRegistroWithMovements();
     }
 
     private function ensureItemSchema(): void
@@ -204,7 +205,7 @@ SQL
             return;
         }
 
-        if (!isset($columns['tipo_registro']) || !isset($columns['patrimonio']) || isset($columns['comprimento_movimentado'])) {
+        if (!isset($columns['tipo_registro']) || !isset($columns['patrimonio']) || !isset($columns['condicao_item']) || isset($columns['comprimento_movimentado'])) {
             $this->pdo->beginTransaction();
             try {
                 if (!isset($columns['tipo_registro'])) {
@@ -212,6 +213,9 @@ SQL
                 }
                 if (!isset($columns['patrimonio'])) {
                     $this->pdo->exec('ALTER TABLE movimentacao ADD COLUMN patrimonio VARCHAR(255) NOT NULL DEFAULT ""');
+                }
+                if (!isset($columns['condicao_item'])) {
+                    $this->pdo->exec('ALTER TABLE movimentacao ADD COLUMN condicao_item VARCHAR(50) NOT NULL DEFAULT ""');
                 }
                 if (isset($columns['comprimento_movimentado'])) {
                     $this->pdo->exec('ALTER TABLE movimentacao DROP COLUMN comprimento_movimentado');
